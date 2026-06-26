@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Compose handles real theming (see ui/theme). This XML theme just gives the
+         Activity a no-action-bar surface before Compose takes over. -->
+    <style name="Theme.PawWalk" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

@@ -1,0 +1,1 @@
+"""PawWalk backend application package."""
