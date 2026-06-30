@@ -1,0 +1,22 @@
+services:
+  backend:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      # Dev-only placeholder so the container runs with zero setup. Real
+      # deployments must override this (see docs/IMPLEMENTATION-PLAN.md B19).
+      - PAWWALK_JWT_SECRET=dev-only-insecure-secret-do-not-use-in-prod
+    volumes:
+      - .:/app
+      - backend-venv:/app/.venv
+      - uv-cache:/root/.cache/uv
+      - uv-python:/root/.local/share/uv/python
+    # Source is bind-mounted over the image's copy, so re-sync on every start
+    # in case pyproject.toml/uv.lock changed since the image was built.
+    command: sh -c "uv sync && uv run fastapi dev --host 0.0.0.0"
+
+volumes:
+  backend-venv:
+  uv-cache:
+  uv-python:

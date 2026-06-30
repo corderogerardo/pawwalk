@@ -5,26 +5,51 @@ Then open the auto-generated docs at http://localhost:8000/docs
 """
 from __future__ import annotations
 
-from fastapi import FastAPI
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlmodel import Session
 
 from .config import settings
-from .routers import assistant, bookings, payments, walkers
+from .db import engine, init_db
+from .routers import assistant, auth, bookings, payments, walkers
+from .seed import seed_walkers
 
-app = FastAPI(title=settings.app_name, version=settings.version)
 
-# The iOS/Android/web clients call this API from other origins during dev.
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    with Session(engine) as session:
+        seed_walkers(session)
+    yield
+
+
+app = FastAPI(title=settings.app_name, version=settings.version, lifespan=lifespan)
+
+# Native iOS/Android don't send an Origin header — this only gates browser
+# clients (the landing page, Swagger UI on another origin). See config.py.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Phase 2: lock down to known client origins.
+    allow_origins=settings.cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+app.include_router(auth.router)
 app.include_router(walkers.router)
 app.include_router(bookings.router)
 app.include_router(payments.router)
 app.include_router(assistant.router)
+
+
+# HTTPException and validation errors already return {"detail": ...} via
+# FastAPI's defaults — this catches everything else so a bug never leaks a
+# non-JSON response that breaks the contract's error shape.
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
 @app.get("/health", tags=["meta"])

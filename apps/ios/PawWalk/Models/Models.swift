@@ -35,6 +35,41 @@ extension Walker {
     ]
 }
 
+struct User: Codable, Identifiable, Hashable {
+    let id: String
+    let email: String
+    let name: String
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, email, name
+        case createdAt = "created_at"
+    }
+}
+
+struct AuthResponse: Codable {
+    let accessToken: String
+    let tokenType: String
+    let user: User
+
+    enum CodingKeys: String, CodingKey {
+        case accessToken = "access_token"
+        case tokenType = "token_type"
+        case user
+    }
+}
+
+struct SignupRequest: Codable {
+    let email: String
+    let password: String
+    let name: String
+}
+
+struct LoginRequest: Codable {
+    let email: String
+    let password: String
+}
+
 struct CreateBookingRequest: Codable {
     let walkerID: String
     let dogName: String
@@ -48,5 +83,50 @@ struct CreateBookingRequest: Codable {
         case dogName = "dog_name"
         case startTime = "start_time"
         case durationMinutes = "duration_minutes"
+    }
+}
+
+enum BookingStatus: String, Codable {
+    case pending, confirmed, inProgress = "in_progress", completed, cancelled
+}
+
+struct Booking: Codable, Identifiable, Hashable {
+    let id: String
+    let walkerID: String
+    let dogName: String
+    let startTime: Date
+    let durationMinutes: Int
+    let status: BookingStatus
+    let priceCents: Int
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, status
+        case walkerID = "walker_id"
+        case dogName = "dog_name"
+        case startTime = "start_time"
+        case durationMinutes = "duration_minutes"
+        case priceCents = "price_cents"
+        case createdAt = "created_at"
+    }
+
+    var priceLabel: String { "$\(priceCents / 100)" }
+}
+
+struct PaymentIntentRequest: Codable {
+    let bookingID: String
+
+    enum CodingKeys: String, CodingKey {
+        case bookingID = "booking_id"
+    }
+}
+
+struct PaymentIntentResponse: Codable {
+    let clientSecret: String
+    let amountCents: Int
+
+    enum CodingKeys: String, CodingKey {
+        case clientSecret = "client_secret"
+        case amountCents = "amount_cents"
     }
 }

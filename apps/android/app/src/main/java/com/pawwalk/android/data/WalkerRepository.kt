@@ -1,32 +1,12 @@
 package com.pawwalk.android.data
 
-import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
-import com.pawwalk.android.BuildConfig
-import kotlinx.serialization.json.Json
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
-
 /**
  * Single place that knows how to get data. Tries the backend; if it's not
  * running (common while you're learning), falls back to sample data so the UI
  * always has something to show.
  */
 object WalkerRepository {
-    private val json = Json { ignoreUnknownKeys = true }
-
-    private val api: PawWalkApi by lazy {
-        val client = OkHttpClient.Builder()
-            .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC })
-            .build()
-        Retrofit.Builder()
-            .baseUrl(BuildConfig.API_BASE_URL.trimEnd('/') + "/")
-            .client(client)
-            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
-            .build()
-            .create(PawWalkApi::class.java)
-    }
+    private val api: PawWalkApi get() = Network.api
 
     suspend fun fetchWalkers(): List<Walker> = try {
         api.getWalkers()

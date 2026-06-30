@@ -17,11 +17,8 @@ from datetime import datetime, time, timedelta, timezone
 from functools import lru_cache
 
 from ..config import settings
-from ..data import WALKERS
 from ..schemas import BookingIntent
-
-# Build the set of known neighborhoods from seed data.
-_KNOWN_HOODS = sorted({h for w in WALKERS.values() for h in w.neighborhoods})
+from ..seed import KNOWN_NEIGHBORHOODS as _KNOWN_HOODS
 
 
 def _parse_duration(text: str) -> int:

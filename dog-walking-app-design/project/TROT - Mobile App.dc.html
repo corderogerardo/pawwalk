@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <style>
+    :root{
+      --canvas:#F5F3FA; --canvas-deep:#E7E4F2;
+      --ink:#171327; --ink-rgb:23,19,39;
+      --accent:#5B4BE0; --accent-rgb:91,75,224;
+      --inverse:#171327; --inverse-2:#2C2647; --inverse-rgb:23,19,39;
+      --on:#F5F3FA; --on-rgb:245,243,250;
+    }
+    :root[data-theme="dark"]{
+      --canvas:#0E0A1C; --canvas-deep:#1C1636;
+      --ink:#ECEAF7; --ink-rgb:236,234,247;
+      --accent:#8E7DFF; --accent-rgb:142,125,255;
+      --inverse:#221B3F; --inverse-2:#2E2752; --inverse-rgb:7,5,15;
+      --on:#F4F2FC; --on-rgb:244,242,252;
+    }
+    @keyframes gc-pulse { 0% { transform: scale(1); opacity: 0.22; } 70%,100% { transform: scale(1.9); opacity: 0; } }
+    @keyframes gc-ping  { 0% { transform: scale(1); opacity: 0.55; } 100% { transform: scale(2.8); opacity: 0; } }
+    @keyframes gc-blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0.25; } }
+    @keyframes gc-dash  { to { stroke-dashoffset: -16; } }
+  </style>
+</helmet>
+
+<!-- ============ HERO / SPEC OVERVIEW ============ -->
+<div style="position:absolute; left:80px; top:80px; width:1180px;">
+  <div data-drags-parent="1" style="display:flex; align-items:center; gap:10px; margin-bottom:14px; cursor:grab; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.6);">
+    <span style="color:var(--accent);">●</span> TROT · Product overview
+  </div>
+  <div style="background:var(--canvas); border:1px solid rgba(var(--ink-rgb),0.12); border-radius:4px; box-shadow:0 1px 3px rgba(var(--ink-rgb),0.07); padding:38px 42px; color:var(--ink); font-family:'DM Sans',sans-serif;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+      <div style="display:flex; align-items:center; gap:15px;">
+        <div style="position:relative; width:48px; height:48px; border:1.5px solid var(--ink); border-radius:14px; display:flex; align-items:center; justify-content:center;">
+          <i class="fa fa-paw" style="font-size:21px; color:var(--ink);"></i>
+          <span style="position:absolute; top:6px; right:6px; width:5px; height:5px; border-radius:50%; background:var(--accent);"></span>
+        </div>
+        <div>
+          <div style="font-size:23px; font-weight:700; letter-spacing:-0.02em; line-height:1;">TROT</div>
+          <div style="margin-top:4px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.16em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.6);">Dog walking · tracked</div>
+        </div>
+      </div>
+      <span style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.38);">Mobile system · v1.0 / 2026</span>
+    </div>
+
+    <div style="display:flex; gap:50px; margin-top:32px;">
+      <div style="flex:1;">
+        <h1 style="margin:0; font-size:56px; font-weight:500; letter-spacing:-0.045em; line-height:0.98;">Every walk,<br>on the <em style="font-style:normal; color:var(--accent);">record.</em></h1>
+        <p style="margin:20px 0 0; max-width:560px; font-size:14.5px; line-height:1.55; color:rgba(var(--ink-rgb),0.62);">Book a vetted walker, watch the route unfold live on a GPS map, and get a full debrief the moment your dog is home. Booking, secure payment and end-to-end tracking — rendered as a calm field HUD instead of yet another pastel pet app.</p>
+        <div style="display:flex; gap:7px; margin-top:24px; flex-wrap:wrap;">
+          <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:var(--on); background:var(--inverse); border-radius:999px; padding:6px 11px;">Booking</span>
+          <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:var(--accent); background:rgba(var(--accent-rgb),0.12); border:1px solid rgba(var(--accent-rgb),0.28); border-radius:999px; padding:5px 11px;">Live GPS</span>
+          <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink); border:1px solid rgba(var(--ink-rgb),0.18); border-radius:999px; padding:5px 11px;">Secure pay</span>
+          <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink); border:1px solid rgba(var(--ink-rgb),0.18); border-radius:999px; padding:5px 11px;">Walk reports</span>
+          <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink); border:1px solid rgba(var(--ink-rgb),0.18); border-radius:999px; padding:5px 11px;">Profiles</span>
+        </div>
+      </div>
+      <div style="width:368px; border-left:1px dashed rgba(var(--ink-rgb),0.22); padding-left:38px; display:grid; grid-template-columns:auto 1fr; gap:13px 22px; align-content:start;">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.55); padding-top:2px;">Type</div>
+        <div style="font-size:13px; font-weight:500;">DM Sans · JetBrains Mono</div>
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.55); padding-top:2px;">Ink</div>
+        <div style="font-size:13px; font-weight:500;">Indigo-black / cool paper</div>
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.55); padding-top:2px;">Accent</div>
+        <div style="font-size:13px; font-weight:500; display:flex; align-items:center; gap:7px;"><span style="width:11px; height:11px; border-radius:3px; background:var(--accent);"></span>Indigo · #5B4BE0</div>
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.55); padding-top:2px;">Platforms</div>
+        <div style="font-size:13px; font-weight:500;">iOS 26 · Android M3</div>
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.55); padding-top:2px;">Flows</div>
+        <div style="font-size:13px; font-weight:500;">Home · Book · Track · Debrief</div>
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.55); padding-top:2px;">Payments</div>
+        <div style="font-size:13px; font-weight:500;">Apple Pay · Card · Wallet</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ iOS SECTION LABEL ============ -->
+<div data-drags-parent="1" style="position:absolute; left:80px; top:540px; cursor:grab; display:flex; align-items:baseline; gap:14px; font-family:'DM Sans',sans-serif;">
+  <span style="font-size:30px; font-weight:500; letter-spacing:-0.03em; color:var(--ink);">iOS</span>
+  <span style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.55);">26 · Liquid Glass — primary flow</span>
+</div>
+
+<!-- ============ iOS 01 · HOME ============ -->
+<div style="position:absolute; left:80px; top:600px; width:402px;">
+  <div data-drags-parent="1" style="display:flex; align-items:center; gap:9px; margin-bottom:16px; cursor:grab;">
+    <span style="font-family:'DM Sans',sans-serif; font-size:15px; font-weight:600; color:var(--ink);">01</span>
+    <span style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.6);">Home · Status</span>
+  </div>
+  <x-import component-from-global-scope="IOSDevice" from="./frames/ios-frame.jsx" time="16:04" hint-size="402px,874px">
+    <div data-screen-label="iOS — Home" style="position:absolute; inset:0; background:var(--canvas); color:var(--ink); font-family:'DM Sans',sans-serif;">
+      <div style="position:absolute; inset:0; padding:58px 20px 96px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column; gap:13px;">
+
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; align-items:center; gap:7px;">
+            <span style="position:relative; display:inline-block; width:8px; height:8px;">
+              <span style="position:absolute; inset:0; border-radius:50%; background:#4A7A5E; animation:gc-pulse 1.9s ease-out infinite;"></span>
+              <span style="position:absolute; inset:0; border-radius:50%; background:#4A7A5E;"></span>
+            </span>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.6);">Tracking ready</span>
+          </div>
+          <span style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.08em; color:rgba(var(--ink-rgb),0.38);">37.77°N · UTC−7</span>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <div>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--accent);">Dog · 001</span>
+            <h1 style="margin:7px 0 0; font-size:40px; font-weight:500; line-height:0.96; letter-spacing:-0.04em;">Mochi.</h1>
+            <div style="margin-top:9px; font-size:13.5px; font-weight:500;">Shiba Inu · 3 yrs · 9.4 kg</div>
+            <div style="margin-top:3px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.6);">@ Sunset District</div>
+          </div>
+          <div style="position:relative; width:54px; height:54px; flex-shrink:0; border:1.5px solid var(--ink); border-radius:16px; display:flex; align-items:center; justify-content:center;">
+            <i class="fa fa-paw" style="font-size:22px; color:var(--ink);"></i>
+            <span style="position:absolute; top:7px; right:7px; width:5px; height:5px; border-radius:50%; background:var(--accent);"></span>
+          </div>
+        </div>
+
+        <div style="height:1px; background:rgba(var(--ink-rgb),0.12);"></div>
+
+        <div style="position:relative; background:var(--inverse); border-radius:20px; padding:17px 18px; color:var(--on); overflow:hidden;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:rgba(var(--on-rgb),0.6);">Next walk · Today</span>
+            <span style="display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--on); border:1px solid rgba(var(--on-rgb),0.22); border-radius:999px; padding:3px 9px;"><span style="width:5px; height:5px; border-radius:50%; background:var(--accent);"></span>ETA 00:26</span>
+          </div>
+          <div style="display:flex; align-items:baseline; gap:10px; margin-top:13px;">
+            <span style="font-size:38px; font-weight:500; letter-spacing:-0.04em; line-height:1;">16:30</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:rgba(var(--on-rgb),0.55);">→ 17:15</span>
+          </div>
+          <div style="margin-top:6px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.09em; text-transform:uppercase; color:rgba(var(--on-rgb),0.72);">45 min · Neighborhood loop · 2.4 km</div>
+
+          <div style="height:1px; background:rgba(var(--on-rgb),0.14); margin:14px 0;"></div>
+
+          <div style="display:flex; align-items:center; gap:11px;">
+            <div style="width:38px; height:38px; border-radius:50%; background:var(--inverse-2); border:1px solid rgba(var(--on-rgb),0.22); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+              <i class="fa fa-user" style="font-size:15px; color:rgba(var(--on-rgb),0.5);"></i>
+            </div>
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:14px; font-weight:600;">Elena Vega</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.07em; text-transform:uppercase; color:rgba(var(--on-rgb),0.6);">Unit 07 · ★ 4.9 · 312 walks</div>
+            </div>
+            <span style="display:inline-flex; align-items:center; gap:5px; font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.08em; text-transform:uppercase; color:#9FD3C0; border:1px solid rgba(74,122,94,0.5); background:rgba(74,122,94,0.18); border-radius:999px; padding:3px 8px;"><i class="fa fa-check" style="font-size:8px;"></i>Vetted</span>
+          </div>
+
+          <div style="display:flex; gap:8px; margin-top:15px;">
+            <button style="flex:1; display:flex; align-items:center; justify-content:center; gap:7px; height:42px; border:none; border-radius:12px; background:var(--accent); color:var(--on); font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; cursor:pointer;"><i class="fa fa-location-arrow" style="font-size:12px;"></i>Track live</button>
+            <button style="width:46px; height:42px; border:1px solid rgba(var(--on-rgb),0.22); border-radius:12px; background:transparent; color:var(--on); cursor:pointer;"><i class="fa fa-comment-o" style="font-size:14px;"></i></button>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:9px;">
+          <div style="flex:1; border:1px solid rgba(var(--ink-rgb),0.12); border-radius:14px; padding:11px 12px;">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.1em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.55);">This week</div>
+            <div style="display:flex; align-items:baseline; gap:3px; margin-top:5px;"><span style="font-family:'JetBrains Mono',monospace; font-size:23px; letter-spacing:-0.03em;">04</span><span style="font-family:'JetBrains Mono',monospace; font-size:9px; color:rgba(var(--ink-rgb),0.4);">walks</span></div>
+            <div style="height:3px; background:rgba(var(--ink-rgb),0.1); margin-top:9px; position:relative; border-radius:2px; overflow:hidden;"><div style="position:absolute; left:0; top:0; bottom:0; width:66%; background:var(--inverse);"></div></div>
+          </div>
+          <div style="flex:1; border:1px solid rgba(var(--ink-rgb),0.12); border-radius:14px; padding:11px 12px;">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.1em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.55);">Distance</div>
+            <div style="display:flex; align-items:baseline; gap:3px; margin-top:5px;"><span style="font-family:'JetBrains Mono',monospace; font-size:23px; letter-spacing:-0.03em;">12.3</span><span style="font-family:'JetBrains Mono',monospace; font-size:9px; color:rgba(var(--ink-rgb),0.4);">km</span></div>
+            <div style="height:3px; background:rgba(var(--ink-rgb),0.1); margin-top:9px; position:relative; border-radius:2px; overflow:hidden;"><div style="position:absolute; left:0; top:0; bottom:0; width:82%; background:var(--inverse);"></div></div>
+          </div>
+          <div style="flex:1; border:1px solid rgba(var(--accent-rgb),0.28); background:rgba(var(--accent-rgb),0.06); border-radius:14px; padding:11px 12px;">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--accent);">Streak</div>
+            <div style="display:flex; align-items:baseline; gap:3px; margin-top:5px;"><span style="font-family:'JetBrains Mono',monospace; font-size:23px; letter-spacing:-0.03em; color:var(--accent);">09</span><span style="font-family:'JetBrains Mono',monospace; font-size:9px; color:rgba(var(--accent-rgb),0.6);">days</span></div>
+            <div style="height:3px; background:rgba(var(--accent-rgb),0.18); margin-top:9px; position:relative; border-radius:2px; overflow:hidden;"><div style="position:absolute; left:0; top:0; bottom:0; width:75%; background:var(--accent);"></div></div>
+          </div>
+        </div>
+
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.6);">§ Recent walks</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.08em; text-transform:uppercase; color:var(--accent);">View all</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px; padding:11px 0; border-top:1px solid rgba(var(--ink-rgb),0.12);">
+            <svg width="42" height="28" viewBox="0 0 42 28" fill="none" style="flex-shrink:0;"><polyline points="2,22 9,11 17,16 25,6 33,13 40,5" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="40" cy="5" r="2.2" fill="var(--accent)"/></svg>
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:13px; font-weight:600;">Riverside loop</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.07em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.6);">Sat · 45 min · 2.6 km · Elena V.</div>
+            </div>
+            <i class="fa fa-angle-right" style="color:rgba(var(--ink-rgb),0.35); font-size:16px;"></i>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px; padding:11px 0; border-top:1px solid rgba(var(--ink-rgb),0.12);">
+            <svg width="42" height="28" viewBox="0 0 42 28" fill="none" style="flex-shrink:0;"><polyline points="2,8 9,18 17,10 25,20 33,9 40,15" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="40" cy="15" r="2.2" fill="var(--accent)"/></svg>
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:13px; font-weight:600;">Dunes &amp; pier</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.07em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.6);">Thu · 30 min · 1.8 km · Marcus T.</div>
+            </div>
+            <i class="fa fa-angle-right" style="color:rgba(var(--ink-rgb),0.35); font-size:16px;"></i>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="position:absolute; left:16px; right:16px; bottom:16px; background:var(--inverse); border-radius:999px; padding:6px; display:flex; gap:2px; box-shadow:0 14px 30px rgba(var(--ink-rgb),0.22); z-index:50;">
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:9px 4px; border-radius:999px; background:var(--accent); color:var(--on);"><i class="fa fa-home" style="font-size:15px;"></i><span style="font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.08em; text-transform:uppercase;">Home</span></div>
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:9px 4px; border-radius:999px; color:rgba(var(--on-rgb),0.6);"><i class="fa fa-calendar-o" style="font-size:15px;"></i><span style="font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.08em; text-transform:uppercase;">Book</span></div>
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:9px 4px; border-radius:999px; color:rgba(var(--on-rgb),0.6);"><i class="fa fa-location-arrow" style="font-size:15px;"></i><span style="font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.08em; text-transform:uppercase;">Track</span></div>
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:9px 4px; border-radius:999px; color:rgba(var(--on-rgb),0.6);"><i class="fa fa-paw" style="font-size:15px;"></i><span style="font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.08em; text-transform:uppercase;">Mochi</span></div>
+      </div>
+    </div>
+  </x-import>
+</div>
+
+
+<!-- ============ iOS 02 · BOOK A WALK ============ -->
+<div style="position:absolute; left:552px; top:600px; width:402px;">
+  <div data-drags-parent="1" style="display:flex; align-items:center; gap:9px; margin-bottom:16px; cursor:grab;">
+    <span style="font-family:'DM Sans',sans-serif; font-size:15px; font-weight:600; color:var(--ink);">02</span>
+    <span style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.6);">Book · Schedule</span>
+  </div>
+  <x-import component-from-global-scope="IOSDevice" from="./frames/ios-frame.jsx" time="9:41" hint-size="402px,874px">
+    <div data-screen-label="iOS — Book" style="position:absolute; inset:0; background:var(--canvas); color:var(--ink); font-family:'DM Sans',sans-serif;">
+      <div style="position:absolute; inset:0; padding:58px 20px 110px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column; gap:15px;">
+
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; align-items:center; gap:7px;">
+            <i class="fa fa-angle-left" style="font-size:19px; color:var(--ink);"></i>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.6);">New walk</span>
+          </div>
+          <span style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.08em; color:rgba(var(--ink-rgb),0.38);">Step 2 / 3</span>
+        </div>
+
+        <h1 style="margin:0; font-size:34px; font-weight:500; line-height:0.98; letter-spacing:-0.04em;">Book a walk.</h1>
+
+        <!-- walker card -->
+        <div style="display:flex; align-items:center; gap:12px; border:1px solid rgba(var(--ink-rgb),0.14); border-radius:16px; padding:12px;">
+          <div style="position:relative; width:48px; height:48px; border-radius:13px; background:var(--canvas-deep); border:1px solid rgba(var(--ink-rgb),0.12); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <i class="fa fa-user" style="font-size:18px; color:rgba(var(--ink-rgb),0.35);"></i>
+            <span style="position:absolute; bottom:-3px; right:-3px; width:14px; height:14px; border-radius:50%; background:#4A7A5E; border:2px solid var(--canvas); display:flex; align-items:center; justify-content:center;"><i class="fa fa-check" style="font-size:6px; color:#fff;"></i></span>
+          </div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:15px; font-weight:600;">Elena Vega</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.07em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.6);">Unit 07 · ★ 4.9 · 1.2 km away</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:16px; letter-spacing:-0.02em;">$24</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.5);">/ 45 min</div>
+          </div>
+        </div>
+
+        <!-- WHEN -->
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.6); margin-bottom:9px;">When</div>
+          <div style="display:flex; gap:7px; margin-bottom:8px;">
+            <div style="flex:1; text-align:center; border-radius:11px; padding:8px 0; background:var(--inverse); color:var(--on);"><div style="font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.08em; text-transform:uppercase; opacity:0.6;">Today</div><div style="font-size:15px; font-weight:600; margin-top:2px;">11</div></div>
+            <div style="flex:1; text-align:center; border:1px solid rgba(var(--ink-rgb),0.14); border-radius:11px; padding:8px 0;"><div style="font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.5);">Fri</div><div style="font-size:15px; font-weight:600; margin-top:2px;">12</div></div>
+            <div style="flex:1; text-align:center; border:1px solid rgba(var(--ink-rgb),0.14); border-radius:11px; padding:8px 0;"><div style="font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.5);">Sat</div><div style="font-size:15px; font-weight:600; margin-top:2px;">13</div></div>
+            <div style="flex:1; text-align:center; border:1px solid rgba(var(--ink-rgb),0.14); border-radius:11px; padding:8px 0;"><div style="font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.5);">Sun</div><div style="font-size:15px; font-weight:600; margin-top:2px;">14</div></div>
+          </div>
+          <div style="display:flex; gap:7px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-size:11px; border:1px solid rgba(var(--ink-rgb),0.14); border-radius:9px; padding:7px 12px; color:rgba(var(--ink-rgb),0.7);">15:00</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:11px; border-radius:9px; padding:7px 12px; background:var(--accent); color:var(--on);">16:30</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:11px; border:1px solid rgba(var(--ink-rgb),0.14); border-radius:9px; padding:7px 12px; color:rgba(var(--ink-rgb),0.7);">17:15</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:11px; border:1px solid rgba(var(--ink-rgb),0.14); border-radius:9px; padding:7px 12px; color:rgba(var(--ink-rgb),0.7);">18:00</span>
+          </div>
+        </div>
+
+        <!-- DURATION -->
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.6); margin-bottom:9px;">Duration</div>
+          <div style="display:flex; border:1px solid rgba(var(--ink-rgb),0.14); border-radius:13px; overflow:hidden;">
+            <div style="flex:1; text-align:center; padding:11px 0; border-right:1px solid rgba(var(--ink-rgb),0.1);"><div style="font-size:15px; font-weight:600;">30</div><div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:rgba(var(--ink-rgb),0.5);">$18</div></div>
+            <div style="flex:1; text-align:center; padding:11px 0; background:var(--inverse); color:var(--on);"><div style="font-size:15px; font-weight:600;">45 min</div><div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:rgba(var(--on-rgb),0.6);">$24</div></div>
+            <div style="flex:1; text-align:center; padding:11px 0; border-left:1px solid rgba(var(--ink-rgb),0.1);"><div style="font-size:15px; font-weight:600;">60</div><div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:rgba(var(--ink-rgb),0.5);">$30</div></div>
+          </div>
+        </div>
+
+        <!-- add-ons -->
+        <div style="display:flex; gap:7px;">
+          <span style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; border-radius:10px; padding:9px 0; background:rgba(var(--accent-rgb),0.1); border:1px solid rgba(var(--accent-rgb),0.3); color:var(--accent);"><i class="fa fa-camera" style="font-size:11px;"></i>Photo report</span>
+          <span style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; border-radius:10px; padding:9px 0; border:1px solid rgba(var(--ink-rgb),0.14); color:rgba(var(--ink-rgb),0.6);"><i class="fa fa-plus" style="font-size:10px;"></i>Treats</span>
+          <span style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; border-radius:10px; padding:9px 0; border:1px solid rgba(var(--ink-rgb),0.14); color:rgba(var(--ink-rgb),0.6);"><i class="fa fa-plus" style="font-size:10px;"></i>Sniff</span>
+        </div>
+
+      </div>
+
+      <!-- fixed bottom: total + pay -->
+      <div style="position:absolute; left:0; right:0; bottom:0; padding:14px 20px 30px; background:linear-gradient(to top, var(--canvas) 72%, transparent); ">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:11px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.55);"><i class="fa fa-apple" style="font-size:12px; margin-right:4px;"></i>Apple Pay · ·· 4242</span>
+          </div>
+          <span style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.08em; text-transform:uppercase; color:#4A7A5E;"><i class="fa fa-lock" style="font-size:10px; margin-right:4px;"></i>Secured</span>
+        </div>
+        <button style="width:100%; display:flex; align-items:center; justify-content:space-between; height:52px; padding:0 20px; border:none; border-radius:15px; background:var(--accent); color:var(--on); font-family:'DM Sans',sans-serif; cursor:pointer;">
+          <span style="font-size:15px; font-weight:600;">Confirm walk</span>
+          <span style="display:flex; align-items:center; gap:9px;"><span style="font-family:'JetBrains Mono',monospace; font-size:15px;">$26.50</span><i class="fa fa-arrow-right" style="font-size:13px;"></i></span>
+        </button>
+      </div>
+    </div>
+  </x-import>
+</div>
+
+<!-- ============ iOS 03 · LIVE GPS TRACKING (HERO) ============ -->
+<div style="position:absolute; left:1024px; top:600px; width:402px;">
+  <div data-drags-parent="1" style="display:flex; align-items:center; gap:9px; margin-bottom:16px; cursor:grab;">
+    <span style="font-family:'DM Sans',sans-serif; font-size:15px; font-weight:600; color:var(--ink);">03</span>
+    <span style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.6);">Live · Telemetry</span>
+    <span style="font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--accent); border:1px solid rgba(var(--accent-rgb),0.4); border-radius:999px; padding:2px 8px;">Hero</span>
+  </div>
+  <x-import component-from-global-scope="IOSDevice" from="./frames/ios-frame.jsx" time="16:31" dark="{{ true }}" hint-size="402px,874px">
+    <div data-screen-label="iOS — Live Tracking" style="position:absolute; inset:0; background:var(--inverse); color:var(--on); font-family:'DM Sans',sans-serif; overflow:hidden;">
+
+      <!-- MAP -->
+      <svg width="100%" height="100%" viewBox="0 0 390 862" preserveAspectRatio="xMidYMid slice" style="position:absolute; inset:0;">
+        <defs>
+          <pattern id="grid" width="39" height="39" patternUnits="userSpaceOnUse">
+            <path d="M39 0H0V39" fill="none" stroke="var(--on)" stroke-opacity="0.05" stroke-width="1"/>
+          </pattern>
+        </defs>
+        <rect width="390" height="862" fill="url(#grid)"/>
+        <!-- faint blocks (parks / buildings) -->
+        <rect x="196" y="332" width="150" height="120" rx="10" fill="var(--on)" fill-opacity="0.04"/>
+        <rect x="40" y="240" width="92" height="120" rx="10" fill="#4A7A5E" fill-opacity="0.06"/>
+        <rect x="150" y="500" width="120" height="80" rx="10" fill="var(--on)" fill-opacity="0.04"/>
+        <!-- remaining route (dashed) -->
+        <polyline points="300,300 300,238 230,208 160,220 150,300" fill="none" stroke="var(--on)" stroke-opacity="0.38" stroke-width="2.5" stroke-dasharray="3 8" stroke-linecap="round" stroke-linejoin="round" style="animation:gc-dash 1s linear infinite;"/>
+        <!-- traveled route (solid red) -->
+        <polyline points="60,600 60,520 120,470 120,400 200,360 270,360 300,300" fill="none" stroke="var(--accent)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <!-- start marker -->
+        <rect x="55" y="595" width="10" height="10" fill="none" stroke="var(--on)" stroke-opacity="0.7" stroke-width="2"/>
+        <!-- event pins -->
+        <circle cx="120" cy="470" r="4" fill="#457B9D"/>
+        <circle cx="200" cy="360" r="4" fill="#C68A1E"/>
+        <!-- home (end) -->
+        <circle cx="150" cy="300" r="5" fill="none" stroke="var(--on)" stroke-opacity="0.55" stroke-width="2"/>
+        <!-- current position -->
+        <circle cx="300" cy="300" r="12" fill="var(--accent)" opacity="0.45" style="transform-box:fill-box; transform-origin:center; animation:gc-ping 1.8s ease-out infinite;"/>
+        <circle cx="300" cy="300" r="8" fill="var(--accent)" stroke="var(--on)" stroke-width="2.5"/>
+        <rect x="247" y="315" width="106" height="19" rx="5" fill="var(--inverse)" fill-opacity="0.82" stroke="var(--on)" stroke-opacity="0.18"/>
+        <text x="256" y="328" font-family="'JetBrains Mono', monospace" font-size="9" letter-spacing="0.6" fill="var(--on)">MOCHI · HERE</text>
+      </svg>
+
+      <!-- coordinate ticks -->
+      <div style="position:absolute; top:210px; left:14px; font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:0.06em; color:rgba(var(--on-rgb),0.32);">37.7711°N</div>
+      <div style="position:absolute; bottom:210px; right:14px; font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:0.06em; color:rgba(var(--on-rgb),0.32);">−122.5104°W</div>
+
+      <!-- top scrim -->
+      <div style="position:absolute; top:0; left:0; right:0; height:240px; background:linear-gradient(to bottom, rgba(var(--inverse-rgb),0.94) 38%, rgba(var(--ink-rgb),0)); pointer-events:none;"></div>
+      <!-- bottom scrim -->
+      <div style="position:absolute; bottom:0; left:0; right:0; height:250px; background:linear-gradient(to top, rgba(var(--inverse-rgb),0.96) 42%, rgba(var(--ink-rgb),0)); pointer-events:none;"></div>
+
+      <!-- TOP HUD -->
+      <div style="position:absolute; top:56px; left:18px; right:18px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; align-items:center; gap:7px;">
+            <span style="position:relative; display:inline-block; width:8px; height:8px;">
+              <span style="position:absolute; inset:0; border-radius:50%; background:var(--accent); animation:gc-pulse 1.6s ease-out infinite;"></span>
+              <span style="position:absolute; inset:0; border-radius:50%; background:var(--accent);"></span>
+            </span>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--on);">Live · Walk in progress</span>
+          </div>
+          <i class="fa fa-expand" style="font-size:13px; color:rgba(var(--on-rgb),0.55);"></i>
+        </div>
+
+        <div style="display:flex; align-items:flex-end; gap:18px; margin-top:18px;">
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:rgba(var(--on-rgb),0.5);">Elapsed</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:34px; letter-spacing:-0.03em; line-height:1; margin-top:3px;">18:42</div>
+          </div>
+          <div style="padding-bottom:3px;">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:rgba(var(--on-rgb),0.5);">Distance</div>
+            <div style="font-family:'DM Sans',sans-serif; font-size:18px; font-weight:600; margin-top:5px;">2.4 km</div>
+          </div>
+          <div style="padding-bottom:3px;">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:rgba(var(--on-rgb),0.5);">Pace</div>
+            <div style="font-family:'DM Sans',sans-serif; font-size:18px; font-weight:600; margin-top:5px;">12′/km</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTTOM HUD -->
+      <div style="position:absolute; bottom:16px; left:16px; right:16px;">
+        <!-- events ticker -->
+        <div style="margin-bottom:11px; display:flex; flex-direction:column; gap:6px;">
+          <div style="display:flex; align-items:center; gap:9px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-size:9px; color:rgba(var(--on-rgb),0.45); width:38px;">16:28</span>
+            <span style="width:5px; height:5px; border-radius:50%; background:#C68A1E;"></span>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(var(--on-rgb),0.8);">Sniff stop · 0:48</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:9px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-size:9px; color:rgba(var(--on-rgb),0.45); width:38px;">16:24</span>
+            <span style="width:5px; height:5px; border-radius:50%; background:#457B9D;"></span>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(var(--on-rgb),0.8);">Pee break logged</span>
+          </div>
+        </div>
+
+        <!-- walker control card -->
+        <div style="display:flex; align-items:center; gap:11px; background:rgba(42,52,64,0.65); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border:1px solid rgba(var(--on-rgb),0.14); border-radius:18px; padding:11px 12px;">
+          <div style="width:40px; height:40px; border-radius:50%; background:var(--inverse-2); border:1px solid rgba(var(--on-rgb),0.22); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <i class="fa fa-user" style="font-size:16px; color:rgba(var(--on-rgb),0.5);"></i>
+          </div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:14px; font-weight:600;">Elena Vega</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.07em; text-transform:uppercase; color:rgba(var(--on-rgb),0.6);">Unit 07 · walking now</div>
+          </div>
+          <button style="width:42px; height:42px; border-radius:13px; border:1px solid rgba(var(--on-rgb),0.18); background:transparent; color:var(--on); cursor:pointer;"><i class="fa fa-comment-o" style="font-size:15px;"></i></button>
+          <button style="width:42px; height:42px; border-radius:13px; border:none; background:#4A7A5E; color:var(--on); cursor:pointer;"><i class="fa fa-phone" style="font-size:15px;"></i></button>
+        </div>
+      </div>
+
+    </div>
+  </x-import>
+</div>
+
+<!-- ============ iOS 04 · WALK REPORT / DEBRIEF ============ -->
+<div style="position:absolute; left:1496px; top:600px; width:402px;">
+  <div data-drags-parent="1" style="display:flex; align-items:center; gap:9px; margin-bottom:16px; cursor:grab;">
+    <span style="font-family:'DM Sans',sans-serif; font-size:15px; font-weight:600; color:var(--ink);">04</span>
+    <span style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.6);">Report · Debrief</span>
+  </div>
+  <x-import component-from-global-scope="IOSDevice" from="./frames/ios-frame.jsx" time="17:16" hint-size="402px,874px">
+    <div data-screen-label="iOS — Walk Report" style="position:absolute; inset:0; background:var(--canvas); color:var(--ink); font-family:'DM Sans',sans-serif;">
+      <div style="position:absolute; inset:0; padding:58px 20px 96px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column; gap:13px;">
+
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; align-items:center; gap:7px;">
+            <span style="position:relative; display:inline-block; width:8px; height:8px;">
+              <span style="position:absolute; inset:0; border-radius:50%; background:#4A7A5E;"></span>
+            </span>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:#4A7A5E;">Walk complete</span>
+          </div>
+          <span style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.08em; color:rgba(var(--ink-rgb),0.38);">Log #0428</span>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+          <h1 style="margin:0; font-size:33px; font-weight:500; line-height:0.96; letter-spacing:-0.04em;">Walk<br>complete.</h1>
+          <div style="text-align:right;">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.5);">Today · 16:30</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.5);">Neighborhood loop</div>
+          </div>
+        </div>
+
+        <!-- summary card (dark) with route -->
+        <div style="background:var(--inverse); border-radius:18px; padding:15px 16px; color:var(--on); display:flex; gap:14px; align-items:center;">
+          <svg width="92" height="76" viewBox="0 0 92 76" fill="none" style="flex-shrink:0;">
+            <rect width="92" height="76" rx="10" fill="var(--on)" fill-opacity="0.05"/>
+            <polyline points="16,60 16,40 34,30 34,18 58,22 70,40 50,54 30,50" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="13" y="57" width="6" height="6" fill="var(--on)" fill-opacity="0.8"/>
+            <circle cx="30" cy="50" r="3.5" fill="none" stroke="var(--on)" stroke-opacity="0.7" stroke-width="1.5"/>
+          </svg>
+          <div style="flex:1;">
+            <div style="display:flex; gap:20px;">
+              <div><div style="font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.1em; text-transform:uppercase; color:rgba(var(--on-rgb),0.5);">Duration</div><div style="font-family:'JetBrains Mono',monospace; font-size:21px; letter-spacing:-0.02em; margin-top:3px;">45:12</div></div>
+              <div><div style="font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.1em; text-transform:uppercase; color:rgba(var(--on-rgb),0.5);">Distance</div><div style="font-family:'JetBrains Mono',monospace; font-size:21px; letter-spacing:-0.02em; margin-top:3px;">2.6 km</div></div>
+            </div>
+            <div style="margin-top:10px; font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(var(--on-rgb),0.6);">Avg 11′/km · 4.2k steps</div>
+          </div>
+        </div>
+
+        <!-- mini stats -->
+        <div style="display:flex; gap:9px;">
+          <div style="flex:1; border:1px solid rgba(var(--ink-rgb),0.12); border-radius:13px; padding:10px 11px; text-align:center;"><i class="fa fa-tint" style="font-size:14px; color:#457B9D;"></i><div style="font-family:'JetBrains Mono',monospace; font-size:15px; margin-top:5px;">2</div><div style="font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.5);">Pee</div></div>
+          <div style="flex:1; border:1px solid rgba(var(--ink-rgb),0.12); border-radius:13px; padding:10px 11px; text-align:center;"><i class="fa fa-paw" style="font-size:14px; color:#C68A1E;"></i><div style="font-family:'JetBrains Mono',monospace; font-size:15px; margin-top:5px;">1</div><div style="font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.5);">Poo</div></div>
+          <div style="flex:1; border:1px solid rgba(var(--ink-rgb),0.12); border-radius:13px; padding:10px 11px; text-align:center;"><i class="fa fa-camera" style="font-size:14px; color:var(--accent);"></i><div style="font-family:'JetBrains Mono',monospace; font-size:15px; margin-top:5px;">4</div><div style="font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.5);">Photos</div></div>
+          <div style="flex:1; border:1px solid rgba(var(--ink-rgb),0.12); border-radius:13px; padding:10px 11px; text-align:center;"><i class="fa fa-tachometer" style="font-size:14px; color:#4A7A5E;"></i><div style="font-family:'JetBrains Mono',monospace; font-size:15px; margin-top:5px;">11′</div><div style="font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.5);">Pace</div></div>
+        </div>
+
+        <!-- photos -->
+        <div style="display:flex; gap:8px;">
+          <div style="flex:1; aspect-ratio:1; position:relative; border-radius:12px; background:var(--canvas-deep); border:1px solid rgba(var(--ink-rgb),0.1); display:flex; align-items:center; justify-content:center;"><i class="fa fa-paw" style="font-size:18px; color:rgba(var(--ink-rgb),0.2);"></i><span style="position:absolute; bottom:5px; left:6px; font-family:'JetBrains Mono',monospace; font-size:7px; letter-spacing:0.1em; color:rgba(var(--ink-rgb),0.4);">IMG 01</span></div>
+          <div style="flex:1; aspect-ratio:1; position:relative; border-radius:12px; background:var(--canvas-deep); border:1px solid rgba(var(--ink-rgb),0.1); display:flex; align-items:center; justify-content:center;"><i class="fa fa-paw" style="font-size:18px; color:rgba(var(--ink-rgb),0.2);"></i><span style="position:absolute; bottom:5px; left:6px; font-family:'JetBrains Mono',monospace; font-size:7px; letter-spacing:0.1em; color:rgba(var(--ink-rgb),0.4);">IMG 02</span></div>
+          <div style="flex:1; aspect-ratio:1; position:relative; border-radius:12px; background:var(--canvas-deep); border:1px solid rgba(var(--ink-rgb),0.1); display:flex; align-items:center; justify-content:center;"><i class="fa fa-paw" style="font-size:18px; color:rgba(var(--ink-rgb),0.2);"></i><span style="position:absolute; bottom:5px; left:6px; font-family:'JetBrains Mono',monospace; font-size:7px; letter-spacing:0.1em; color:rgba(var(--ink-rgb),0.4);">IMG 03</span></div>
+          <div style="flex:1; aspect-ratio:1; position:relative; border-radius:12px; background:var(--inverse); display:flex; align-items:center; justify-content:center; color:var(--on);"><span style="font-family:'JetBrains Mono',monospace; font-size:13px;">+1</span></div>
+        </div>
+
+        <!-- walker note -->
+        <div style="border-left:2px solid var(--accent); padding:2px 0 2px 12px;">
+          <p style="margin:0; font-size:13px; line-height:1.5; color:var(--ink);">"Mochi made two new friends at the park and crushed the hill loop. Great recall today!"</p>
+          <div style="margin-top:7px; display:flex; align-items:center; justify-content:space-between;">
+            <span style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.55);">— Elena · Unit 07</span>
+            <span style="color:var(--accent); letter-spacing:1px; font-size:11px;"><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i></span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- fixed CTAs -->
+      <div style="position:absolute; left:0; right:0; bottom:0; padding:12px 20px 30px; background:linear-gradient(to top, var(--canvas) 74%, transparent); display:flex; gap:9px;">
+        <button style="flex:1; height:50px; border:none; border-radius:14px; background:var(--accent); color:var(--on); font-family:'DM Sans',sans-serif; font-size:14px; font-weight:600; cursor:pointer;">Book again</button>
+        <button style="flex:1; height:50px; border:1px solid rgba(var(--ink-rgb),0.2); border-radius:14px; background:transparent; color:var(--ink); font-family:'DM Sans',sans-serif; font-size:14px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px;"><i class="fa fa-heart-o" style="font-size:13px;"></i>Tip Elena</button>
+      </div>
+    </div>
+  </x-import>
+</div>
+
+<!-- ============ ANDROID SECTION LABEL ============ -->
+<div data-drags-parent="1" style="position:absolute; left:80px; top:1540px; cursor:grab; display:flex; align-items:baseline; gap:14px; font-family:'DM Sans',sans-serif;">
+  <span style="font-size:30px; font-weight:500; letter-spacing:-0.03em; color:var(--ink);">Android</span>
+  <span style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.55);">Material 3 — same brand, native chrome</span>
+</div>
+
+<!-- ============ ANDROID 05 · HOME ============ -->
+<div style="position:absolute; left:80px; top:1600px; width:412px;">
+  <div data-drags-parent="1" style="display:flex; align-items:center; gap:9px; margin-bottom:16px; cursor:grab;">
+    <span style="font-family:'DM Sans',sans-serif; font-size:15px; font-weight:600; color:var(--ink);">05</span>
+    <span style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.6);">Home · Status</span>
+  </div>
+  <x-import component-from-global-scope="AndroidDevice" from="./frames/android-frame.jsx" time="16:04" hint-size="412px,892px">
+    <div data-screen-label="Android — Home" style="position:absolute; inset:0; background:var(--canvas); color:var(--ink); font-family:'DM Sans',sans-serif;">
+      <div style="position:absolute; inset:0; padding:14px 20px 92px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column; gap:13px;">
+
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; align-items:center; gap:7px;">
+            <span style="position:relative; display:inline-block; width:8px; height:8px;">
+              <span style="position:absolute; inset:0; border-radius:50%; background:#4A7A5E; animation:gc-pulse 1.9s ease-out infinite;"></span>
+              <span style="position:absolute; inset:0; border-radius:50%; background:#4A7A5E;"></span>
+            </span>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.6);">Tracking ready</span>
+          </div>
+          <span style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.08em; color:rgba(var(--ink-rgb),0.38);">37.77°N · UTC−7</span>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <div>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--accent);">Dog · 001</span>
+            <h1 style="margin:7px 0 0; font-size:40px; font-weight:500; line-height:0.96; letter-spacing:-0.04em;">Mochi.</h1>
+            <div style="margin-top:9px; font-size:13.5px; font-weight:500;">Shiba Inu · 3 yrs · 9.4 kg</div>
+            <div style="margin-top:3px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.6);">@ Sunset District</div>
+          </div>
+          <div style="position:relative; width:54px; height:54px; flex-shrink:0; border:1.5px solid var(--ink); border-radius:16px; display:flex; align-items:center; justify-content:center;">
+            <i class="fa fa-paw" style="font-size:22px; color:var(--ink);"></i>
+            <span style="position:absolute; top:7px; right:7px; width:5px; height:5px; border-radius:50%; background:var(--accent);"></span>
+          </div>
+        </div>
+
+        <div style="height:1px; background:rgba(var(--ink-rgb),0.12);"></div>
+
+        <div style="position:relative; background:var(--inverse); border-radius:20px; padding:17px 18px; color:var(--on); overflow:hidden;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:rgba(var(--on-rgb),0.6);">Next walk · Today</span>
+            <span style="display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--on); border:1px solid rgba(var(--on-rgb),0.22); border-radius:999px; padding:3px 9px;"><span style="width:5px; height:5px; border-radius:50%; background:var(--accent);"></span>ETA 00:26</span>
+          </div>
+          <div style="display:flex; align-items:baseline; gap:10px; margin-top:13px;">
+            <span style="font-size:38px; font-weight:500; letter-spacing:-0.04em; line-height:1;">16:30</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:rgba(var(--on-rgb),0.55);">→ 17:15</span>
+          </div>
+          <div style="margin-top:6px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.09em; text-transform:uppercase; color:rgba(var(--on-rgb),0.72);">45 min · Neighborhood loop · 2.4 km</div>
+
+          <div style="height:1px; background:rgba(var(--on-rgb),0.14); margin:14px 0;"></div>
+
+          <div style="display:flex; align-items:center; gap:11px;">
+            <div style="width:38px; height:38px; border-radius:50%; background:var(--inverse-2); border:1px solid rgba(var(--on-rgb),0.22); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+              <i class="fa fa-user" style="font-size:15px; color:rgba(var(--on-rgb),0.5);"></i>
+            </div>
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:14px; font-weight:600;">Elena Vega</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.07em; text-transform:uppercase; color:rgba(var(--on-rgb),0.6);">Unit 07 · ★ 4.9 · 312 walks</div>
+            </div>
+            <span style="display:inline-flex; align-items:center; gap:5px; font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.08em; text-transform:uppercase; color:#9FD3C0; border:1px solid rgba(74,122,94,0.5); background:rgba(74,122,94,0.18); border-radius:999px; padding:3px 8px;"><i class="fa fa-check" style="font-size:8px;"></i>Vetted</span>
+          </div>
+
+          <div style="display:flex; gap:8px; margin-top:15px;">
+            <button style="flex:1; display:flex; align-items:center; justify-content:center; gap:7px; height:42px; border:none; border-radius:12px; background:var(--accent); color:var(--on); font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; cursor:pointer;"><i class="fa fa-location-arrow" style="font-size:12px;"></i>Track live</button>
+            <button style="width:46px; height:42px; border:1px solid rgba(var(--on-rgb),0.22); border-radius:12px; background:transparent; color:var(--on); cursor:pointer;"><i class="fa fa-comment-o" style="font-size:14px;"></i></button>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:9px;">
+          <div style="flex:1; border:1px solid rgba(var(--ink-rgb),0.12); border-radius:14px; padding:11px 12px;">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.1em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.55);">This week</div>
+            <div style="display:flex; align-items:baseline; gap:3px; margin-top:5px;"><span style="font-family:'JetBrains Mono',monospace; font-size:23px; letter-spacing:-0.03em;">04</span><span style="font-family:'JetBrains Mono',monospace; font-size:9px; color:rgba(var(--ink-rgb),0.4);">walks</span></div>
+            <div style="height:3px; background:rgba(var(--ink-rgb),0.1); margin-top:9px; position:relative; border-radius:2px; overflow:hidden;"><div style="position:absolute; left:0; top:0; bottom:0; width:66%; background:var(--inverse);"></div></div>
+          </div>
+          <div style="flex:1; border:1px solid rgba(var(--ink-rgb),0.12); border-radius:14px; padding:11px 12px;">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.1em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.55);">Distance</div>
+            <div style="display:flex; align-items:baseline; gap:3px; margin-top:5px;"><span style="font-family:'JetBrains Mono',monospace; font-size:23px; letter-spacing:-0.03em;">12.3</span><span style="font-family:'JetBrains Mono',monospace; font-size:9px; color:rgba(var(--ink-rgb),0.4);">km</span></div>
+            <div style="height:3px; background:rgba(var(--ink-rgb),0.1); margin-top:9px; position:relative; border-radius:2px; overflow:hidden;"><div style="position:absolute; left:0; top:0; bottom:0; width:82%; background:var(--inverse);"></div></div>
+          </div>
+          <div style="flex:1; border:1px solid rgba(var(--accent-rgb),0.28); background:rgba(var(--accent-rgb),0.06); border-radius:14px; padding:11px 12px;">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--accent);">Streak</div>
+            <div style="display:flex; align-items:baseline; gap:3px; margin-top:5px;"><span style="font-family:'JetBrains Mono',monospace; font-size:23px; letter-spacing:-0.03em; color:var(--accent);">09</span><span style="font-family:'JetBrains Mono',monospace; font-size:9px; color:rgba(var(--accent-rgb),0.6);">days</span></div>
+            <div style="height:3px; background:rgba(var(--accent-rgb),0.18); margin-top:9px; position:relative; border-radius:2px; overflow:hidden;"><div style="position:absolute; left:0; top:0; bottom:0; width:75%; background:var(--accent);"></div></div>
+          </div>
+        </div>
+
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.6);">§ Recent walks</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.08em; text-transform:uppercase; color:var(--accent);">View all</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px; padding:11px 0; border-top:1px solid rgba(var(--ink-rgb),0.12);">
+            <svg width="42" height="28" viewBox="0 0 42 28" fill="none" style="flex-shrink:0;"><polyline points="2,22 9,11 17,16 25,6 33,13 40,5" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="40" cy="5" r="2.2" fill="var(--accent)"/></svg>
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:13px; font-weight:600;">Riverside loop</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.07em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.6);">Sat · 45 min · 2.6 km · Elena V.</div>
+            </div>
+            <i class="fa fa-angle-right" style="color:rgba(var(--ink-rgb),0.35); font-size:16px;"></i>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px; padding:11px 0; border-top:1px solid rgba(var(--ink-rgb),0.12);">
+            <svg width="42" height="28" viewBox="0 0 42 28" fill="none" style="flex-shrink:0;"><polyline points="2,8 9,18 17,10 25,20 33,9 40,15" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="40" cy="15" r="2.2" fill="var(--accent)"/></svg>
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:13px; font-weight:600;">Dunes &amp; pier</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.07em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.6);">Thu · 30 min · 1.8 km · Marcus T.</div>
+            </div>
+            <i class="fa fa-angle-right" style="color:rgba(var(--ink-rgb),0.35); font-size:16px;"></i>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="position:absolute; left:16px; right:16px; bottom:14px; background:var(--inverse); border-radius:999px; padding:6px; display:flex; gap:2px; box-shadow:0 14px 30px rgba(var(--ink-rgb),0.22); z-index:50;">
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:9px 4px; border-radius:999px; background:var(--accent); color:var(--on);"><i class="fa fa-home" style="font-size:15px;"></i><span style="font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.08em; text-transform:uppercase;">Home</span></div>
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:9px 4px; border-radius:999px; color:rgba(var(--on-rgb),0.6);"><i class="fa fa-calendar-o" style="font-size:15px;"></i><span style="font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.08em; text-transform:uppercase;">Book</span></div>
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:9px 4px; border-radius:999px; color:rgba(var(--on-rgb),0.6);"><i class="fa fa-location-arrow" style="font-size:15px;"></i><span style="font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.08em; text-transform:uppercase;">Track</span></div>
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:9px 4px; border-radius:999px; color:rgba(var(--on-rgb),0.6);"><i class="fa fa-paw" style="font-size:15px;"></i><span style="font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.08em; text-transform:uppercase;">Mochi</span></div>
+      </div>
+    </div>
+  </x-import>
+</div>
+
+<!-- ============ ANDROID 06 · LIVE GPS TRACKING ============ -->
+<div style="position:absolute; left:562px; top:1600px; width:412px;">
+  <div data-drags-parent="1" style="display:flex; align-items:center; gap:9px; margin-bottom:16px; cursor:grab;">
+    <span style="font-family:'DM Sans',sans-serif; font-size:15px; font-weight:600; color:var(--ink);">06</span>
+    <span style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:rgba(var(--ink-rgb),0.6);">Live · Telemetry</span>
+  </div>
+  <x-import component-from-global-scope="AndroidDevice" from="./frames/android-frame.jsx" time="16:31" dark="{{ true }}" hint-size="412px,892px">
+    <div data-screen-label="Android — Live Tracking" style="position:absolute; inset:0; background:var(--inverse); color:var(--on); font-family:'DM Sans',sans-serif; overflow:hidden;">
+
+      <svg width="100%" height="100%" viewBox="0 0 390 862" preserveAspectRatio="xMidYMid slice" style="position:absolute; inset:0;">
+        <defs>
+          <pattern id="grid-a" width="39" height="39" patternUnits="userSpaceOnUse">
+            <path d="M39 0H0V39" fill="none" stroke="var(--on)" stroke-opacity="0.05" stroke-width="1"/>
+          </pattern>
+        </defs>
+        <rect width="390" height="862" fill="url(#grid-a)"/>
+        <rect x="196" y="332" width="150" height="120" rx="10" fill="var(--on)" fill-opacity="0.04"/>
+        <rect x="40" y="240" width="92" height="120" rx="10" fill="#4A7A5E" fill-opacity="0.06"/>
+        <rect x="150" y="500" width="120" height="80" rx="10" fill="var(--on)" fill-opacity="0.04"/>
+        <polyline points="300,300 300,238 230,208 160,220 150,300" fill="none" stroke="var(--on)" stroke-opacity="0.38" stroke-width="2.5" stroke-dasharray="3 8" stroke-linecap="round" stroke-linejoin="round" style="animation:gc-dash 1s linear infinite;"/>
+        <polyline points="60,600 60,520 120,470 120,400 200,360 270,360 300,300" fill="none" stroke="var(--accent)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="55" y="595" width="10" height="10" fill="none" stroke="var(--on)" stroke-opacity="0.7" stroke-width="2"/>
+        <circle cx="120" cy="470" r="4" fill="#457B9D"/>
+        <circle cx="200" cy="360" r="4" fill="#C68A1E"/>
+        <circle cx="150" cy="300" r="5" fill="none" stroke="var(--on)" stroke-opacity="0.55" stroke-width="2"/>
+        <circle cx="300" cy="300" r="12" fill="var(--accent)" opacity="0.45" style="transform-box:fill-box; transform-origin:center; animation:gc-ping 1.8s ease-out infinite;"/>
+        <circle cx="300" cy="300" r="8" fill="var(--accent)" stroke="var(--on)" stroke-width="2.5"/>
+        <rect x="247" y="315" width="106" height="19" rx="5" fill="var(--inverse)" fill-opacity="0.82" stroke="var(--on)" stroke-opacity="0.18"/>
+        <text x="256" y="328" font-family="'JetBrains Mono', monospace" font-size="9" letter-spacing="0.6" fill="var(--on)">MOCHI · HERE</text>
+      </svg>
+
+      <div style="position:absolute; top:170px; left:14px; font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:0.06em; color:rgba(var(--on-rgb),0.32);">37.7711°N</div>
+
+      <div style="position:absolute; top:0; left:0; right:0; height:210px; background:linear-gradient(to bottom, rgba(var(--inverse-rgb),0.94) 38%, rgba(var(--ink-rgb),0)); pointer-events:none;"></div>
+      <div style="position:absolute; bottom:0; left:0; right:0; height:250px; background:linear-gradient(to top, rgba(var(--inverse-rgb),0.96) 42%, rgba(var(--ink-rgb),0)); pointer-events:none;"></div>
+
+      <div style="position:absolute; top:16px; left:18px; right:18px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; align-items:center; gap:7px;">
+            <span style="position:relative; display:inline-block; width:8px; height:8px;">
+              <span style="position:absolute; inset:0; border-radius:50%; background:var(--accent); animation:gc-pulse 1.6s ease-out infinite;"></span>
+              <span style="position:absolute; inset:0; border-radius:50%; background:var(--accent);"></span>
+            </span>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--on);">Live · Walk in progress</span>
+          </div>
+          <i class="fa fa-expand" style="font-size:13px; color:rgba(var(--on-rgb),0.55);"></i>
+        </div>
+
+        <div style="display:flex; align-items:flex-end; gap:18px; margin-top:18px;">
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:rgba(var(--on-rgb),0.5);">Elapsed</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:34px; letter-spacing:-0.03em; line-height:1; margin-top:3px;">18:42</div>
+          </div>
+          <div style="padding-bottom:3px;">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:rgba(var(--on-rgb),0.5);">Distance</div>
+            <div style="font-family:'DM Sans',sans-serif; font-size:18px; font-weight:600; margin-top:5px;">2.4 km</div>
+          </div>
+          <div style="padding-bottom:3px;">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:rgba(var(--on-rgb),0.5);">Pace</div>
+            <div style="font-family:'DM Sans',sans-serif; font-size:18px; font-weight:600; margin-top:5px;">12′/km</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="position:absolute; bottom:16px; left:16px; right:16px;">
+        <div style="margin-bottom:11px; display:flex; flex-direction:column; gap:6px;">
+          <div style="display:flex; align-items:center; gap:9px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-size:9px; color:rgba(var(--on-rgb),0.45); width:38px;">16:28</span>
+            <span style="width:5px; height:5px; border-radius:50%; background:#C68A1E;"></span>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(var(--on-rgb),0.8);">Sniff stop · 0:48</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:9px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-size:9px; color:rgba(var(--on-rgb),0.45); width:38px;">16:24</span>
+            <span style="width:5px; height:5px; border-radius:50%; background:#457B9D;"></span>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(var(--on-rgb),0.8);">Pee break logged</span>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:11px; background:rgba(42,52,64,0.65); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border:1px solid rgba(var(--on-rgb),0.14); border-radius:18px; padding:11px 12px;">
+          <div style="width:40px; height:40px; border-radius:50%; background:var(--inverse-2); border:1px solid rgba(var(--on-rgb),0.22); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <i class="fa fa-user" style="font-size:16px; color:rgba(var(--on-rgb),0.5);"></i>
+          </div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:14px; font-weight:600;">Elena Vega</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.07em; text-transform:uppercase; color:rgba(var(--on-rgb),0.6);">Unit 07 · walking now</div>
+          </div>
+          <button style="width:42px; height:42px; border-radius:13px; border:1px solid rgba(var(--on-rgb),0.18); background:transparent; color:var(--on); cursor:pointer;"><i class="fa fa-comment-o" style="font-size:15px;"></i></button>
+          <button style="width:42px; height:42px; border-radius:13px; border:none; background:#4A7A5E; color:var(--on); cursor:pointer;"><i class="fa fa-phone" style="font-size:15px;"></i></button>
+        </div>
+      </div>
+
+    </div>
+  </x-import>
+</div></x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;theme&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;default&quot;: &quot;Light&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;options&quot;: [&quot;Light&quot;, &quot;Dark&quot;], &quot;section&quot;: &quot;Theme&quot; }
+}">
+class Component extends DCLogic {
+  componentDidMount() { this._applyTheme(); }
+  componentDidUpdate() { this._applyTheme(); }
+  _applyTheme() {
+    const t = (this.props.theme ?? 'Light').toLowerCase();
+    if (typeof document !== 'undefined' && document.documentElement) document.documentElement.setAttribute('data-theme', t);
+  }
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -10,7 +10,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 
 Duration = Literal[30, 45, 60]
 
@@ -21,6 +21,32 @@ class BookingStatus(str, Enum):
     in_progress = "in_progress"
     completed = "completed"
     cancelled = "cancelled"
+
+
+# ---- Auth ----
+
+class User(BaseModel):
+    id: str
+    email: EmailStr
+    name: str
+    created_at: datetime
+
+
+class SignupRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8)
+    name: str
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class AuthResponse(BaseModel):
+    access_token: str
+    token_type: Literal["bearer"] = "bearer"
+    user: User
 
 
 class Walker(BaseModel):

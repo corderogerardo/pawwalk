@@ -2,12 +2,18 @@ import SwiftUI
 
 struct WalkersView: View {
     @State private var model = WalkersViewModel()
+    @State private var bookingWalker: Walker?
+    /// Set after a successful booking so the caller (HomeView) can switch to Bookings.
+    var onBooked: (Booking) -> Void = { _ in }
 
     var body: some View {
         NavigationStack {
             content
                 .navigationTitle("Find a walker")
                 .task { await model.load() }
+        }
+        .sheet(item: $bookingWalker) { walker in
+            CreateBookingView(walker: walker, onBooked: onBooked)
         }
     }
 
@@ -25,6 +31,8 @@ struct WalkersView: View {
         case .loaded(let walkers):
             List(walkers) { walker in
                 WalkerRow(walker: walker)
+                    .contentShape(Rectangle())
+                    .onTapGesture { bookingWalker = walker }
             }
             .listStyle(.plain)
         }

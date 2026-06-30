@@ -12,6 +12,8 @@ retrofit = "2.11.0"
 okhttp = "4.12.0"
 serialization = "1.7.3"
 retrofitSerialization = "1.0.0"
+securityCrypto = "1.1.0"
+stripeAndroid = "21.19.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -29,6 +31,8 @@ retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = 
 okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 retrofit-kotlinx-serialization = { group = "com.jakewharton.retrofit", name = "retrofit2-kotlinx-serialization-converter", version.ref = "retrofitSerialization" }
+androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
+stripe-android = { group = "com.stripe", name = "stripe-android", version.ref = "stripeAndroid" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -1,18 +1,27 @@
 import SwiftUI
 
-/// Root tab bar. Each tab is its own SwiftUI feature view.
+/// Root view. Gated on `AuthSession`: signed out shows `AuthView`, signed in
+/// shows the designed Home screen (with its own HUD tab bar), which presents
+/// Live GPS tracking. Light/dark follow the system appearance via the Brand
+/// color tokens.
 struct ContentView: View {
+    @Environment(AuthSession.self) private var auth
+
     var body: some View {
-        TabView {
-            WalkersView()
-                .tabItem { Label("Walkers", systemImage: "figure.walk") }
-            BookingsView()
-                .tabItem { Label("Bookings", systemImage: "calendar") }
+        Group {
+            if auth.isRestoring {
+                Brand.canvas.ignoresSafeArea()
+            } else if auth.signedIn {
+                HomeView()
+            } else {
+                AuthView()
+            }
         }
-        .tint(.brand)
+        .tint(Brand.accent)
     }
 }
 
 #Preview {
     ContentView()
+        .environment(AuthSession())
 }

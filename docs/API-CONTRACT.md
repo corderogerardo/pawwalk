@@ -4,7 +4,7 @@ This is the single source of truth for the HTTP API. The iOS app, Android app, a
 
 - **Base URL (dev):** `http://localhost:8000`
 - **Format:** JSON, `Content-Type: application/json`
-- **Auth:** `Authorization: Bearer <token>` (stubbed in v0 — any non-empty token is accepted)
+- **Auth:** `Authorization: Bearer <token>` — real JWT, issued by `POST /auth/login` or `/auth/signup`
 - **Interactive docs:** the backend auto-generates OpenAPI at `/docs` (Swagger UI) and `/openapi.json`.
 
 > Because FastAPI generates `/openapi.json` from the Pydantic models, this document and the live schema should always agree. If they drift, the backend wins — regenerate clients from `/openapi.json`.
@@ -17,6 +17,21 @@ This is the single source of truth for the HTTP API. The iOS app, Android app, a
 ```
 GET /health  →  200 { "status": "ok", "version": "0.1.0" }
 ```
+
+### Auth
+```
+POST /auth/signup  { email, password, name }      → 201 AuthResponse
+POST /auth/login   { email, password }            → 200 AuthResponse | 401
+GET  /auth/me      (Bearer)                        → 200 User | 401
+```
+```jsonc
+// User
+{ "id": "usr_123", "email": "jane@example.com", "name": "Jane Doe", "created_at": "2026-06-26T19:00:00Z" }
+
+// AuthResponse
+{ "access_token": "eyJ...", "token_type": "bearer", "user": { /* User */ } }
+```
+`POST /auth/signup` returns `409` if the email is already registered. All `/bookings` endpoints require a valid Bearer token (see below).
 
 ### Walkers
 ```
@@ -37,6 +52,9 @@ GET /walkers/{walker_id}      → 200 Walker | 404
 ```
 
 ### Bookings
+All endpoints below require a valid Bearer token. Bookings are scoped to the
+caller — `GET /bookings` only lists the caller's own, and `{booking_id}` reads
+and cancels 404 if the booking belongs to someone else.
 ```
 POST /bookings                → 201 Booking
 GET  /bookings                → 200 [Booking]      (current user's)
@@ -66,11 +84,17 @@ POST /bookings/{booking_id}/cancel → 200 Booking
 }
 ```
 
-### Payments (stubbed in v0)
+### Payments
+Requires a valid Bearer token; 404 if the booking isn't the caller's.
 ```
 POST /payments/intent         → 200 { "client_secret": "...", "amount_cents": 1800 }
 ```
-v0 returns a fake client secret so the mobile clients can build the checkout UI. Phase 3 swaps this for a real Stripe PaymentIntent — the response shape stays the same.
+Returns a real Stripe `PaymentIntent` client secret when `PAWWALK_STRIPE_SECRET_KEY` is configured server-side; otherwise returns an offline stub (`pi_stub_...`) so the mobile clients still work without Stripe set up. Same response shape either way — clients don't need to know which mode is active.
+
+```
+POST /payments/webhook        → 200 { "received": true }
+```
+Stripe-only (configure this URL in the Stripe dashboard, not called by mobile clients). Verifies the `Stripe-Signature` header against `PAWWALK_STRIPE_WEBHOOK_SECRET` — 400 if unconfigured or the signature is invalid. On `payment_intent.succeeded`, flips the matching booking to `confirmed`.
 
 ### AI booking assistant (LangGraph + Pydantic AI)
 ```

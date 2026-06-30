@@ -19,8 +19,9 @@
           └──────────────────┬──────────────────┘
                              │
                      ┌───────▼────────┐   ┌──────────────┐
-                     │  Database       │   │ Stripe (P3)  │
-                     │ (Postgres, P2)  │   │ payments     │
+                     │  Database       │   │   Stripe     │
+                     │ (SQLModel;      │   │  payments    │
+                     │  SQLite/Postgres)│  │              │
                      └─────────────────┘   └──────────────┘
 ```
 
@@ -36,9 +37,9 @@ The three clients are thin: they render UI and call the API defined in [API-CONT
 ## Phasing (high level — full board in Notion)
 
 1. **Phase 0 — Scaffolding (done).** All four apps run with stubbed data.
-2. **Phase 1 — Real domain.** Database (Postgres), real walkers/bookings, validation.
-3. **Phase 2 — Auth & profiles.** Sign-up, JWT, user-scoped bookings.
-4. **Phase 3 — Payments.** Stripe PaymentIntents wired into the stubbed `/payments` endpoint.
+2. **Phase 1 — Real domain (done).** SQLModel-backed database (SQLite locally, Postgres via a connection-string change — see `apps/backend/README.md`), real walkers/bookings, validation. Alembic migrations still open.
+3. **Phase 2 — Auth & profiles (done).** Sign-up, JWT, user-scoped bookings — backend, iOS, and Android all wired end-to-end.
+4. **Phase 3 — Payments (done).** Real Stripe PaymentIntents behind `/payments/intent` (falls back to an offline stub when no Stripe key is configured) plus a webhook that confirms bookings on `payment_intent.succeeded`.
 5. **Phase 4 — AI assistant & GPS.** Grow the LangGraph agent; live walk tracking.
 
 ## Repo conventions

@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import TypedDict
 
 from langgraph.graph import END, START, StateGraph
+from sqlmodel import Session
 
 from .. import data
 from ..schemas import AssistantReply, BookingIntent, DraftBooking, Walker
@@ -20,6 +21,7 @@ from .intent import extract_intent
 
 class AssistantState(TypedDict, total=False):
     message: str
+    session: Session
     intent: BookingIntent
     walkers: list[Walker]
     reply: str
@@ -33,7 +35,7 @@ def parse_intent(state: AssistantState) -> AssistantState:
 
 def find_walkers(state: AssistantState) -> AssistantState:
     intent = state["intent"]
-    matches = data.find_walkers(intent.neighborhood)
+    matches = data.find_walkers(state["session"], intent.neighborhood)
     return {"walkers": matches}
 
 
@@ -80,8 +82,8 @@ def _build_graph():
 GRAPH = _build_graph()
 
 
-def run_assistant(message: str) -> AssistantReply:
-    final = GRAPH.invoke({"message": message})
+def run_assistant(message: str, session: Session) -> AssistantReply:
+    final = GRAPH.invoke({"message": message, "session": session})
     return AssistantReply(
         reply=final["reply"],
         suggested_walkers=final.get("suggested", []),
