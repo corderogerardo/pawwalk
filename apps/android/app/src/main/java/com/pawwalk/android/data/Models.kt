@@ -126,3 +126,25 @@ data class AssistantReply(
 
 @Serializable
 data class SimulateAck(val status: String = "", val points: Int = 0)
+
+// ---- Owner home stats (GET /bookings/stats) ----
+
+@Serializable
+data class RecentWalk(
+    @SerialName("booking_id") val bookingId: String,
+    @SerialName("dog_name") val dogName: String,
+    @SerialName("walker_name") val walkerName: String,
+    @SerialName("start_time") val startTime: String,
+    @SerialName("duration_minutes") val durationMinutes: Int,
+    @SerialName("distance_km") val distanceKm: Double,
+    // Per-segment distance profile of the recorded track, 6 values in 0..1
+    // (empty when the walk had no GPS track). Drives the sparkline.
+    val sparkline: List<Double> = emptyList(),
+)
+
+@Serializable
+data class OwnerStats(
+    @SerialName("distance_km") val distanceKm: Double,
+    @SerialName("streak_days") val streakDays: Int,
+    @SerialName("recent_walks") val recentWalks: List<RecentWalk> = emptyList(),
+)

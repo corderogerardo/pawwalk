@@ -129,6 +129,40 @@ class Booking(BaseModel):
         return s
 
 
+# ---- Owner home stats ----
+
+class RecentWalk(BaseModel):
+    """A completed walk with its recorded distance, for the Home 'Recent walks' list."""
+    booking_id: str
+    dog_name: str
+    walker_name: str
+    start_time: datetime
+    duration_minutes: int
+    distance_km: float
+    # Per-segment distance profile of the recorded track, 6 values normalized
+    # 0..1 (empty when the walk has no GPS track). Drives the little sparkline.
+    sparkline: list[float] = []
+
+    @field_serializer("start_time")
+    def serialize_dt(self, v: datetime, _info) -> str:
+        s = v.isoformat()
+        if v.tzinfo is None:
+            s += "Z"
+        return s
+
+
+class OwnerStats(BaseModel):
+    distance_km: float
+    streak_days: int
+    recent_walks: list[RecentWalk] = []
+
+
+# ---- Waitlist (landing page) ----
+
+class WaitlistRequest(BaseModel):
+    email: EmailStr
+
+
 class PaymentIntentRequest(BaseModel):
     booking_id: str
 

@@ -6,7 +6,7 @@ from sqlmodel import Session
 from .. import data
 from ..db import get_session
 from ..deps import get_current_owner, get_current_user, get_current_walker
-from ..schemas import Booking, BookingStatus, CreateBookingRequest, User
+from ..schemas import Booking, BookingStatus, CreateBookingRequest, OwnerStats, User
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 
@@ -31,6 +31,18 @@ def list_bookings(
     current_user: User = Depends(get_current_user),
 ) -> list[Booking]:
     return data.list_bookings(session, current_user.id)
+
+
+# ---- Owner home stats (declared before `/{booking_id}`) ----
+
+@router.get("/stats", response_model=OwnerStats)
+def booking_stats(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_owner),
+) -> OwnerStats:
+    """Real numbers for the Home screen: total tracked distance across completed
+    walks, the daily walk streak, and the most recent walks with their tracks."""
+    return data.owner_stats(session, current_user.id)
 
 
 # ---- Walker side (declared before `/{booking_id}`) ----

@@ -22,6 +22,9 @@ interface PawWalkApi {
     @POST("bookings/{id}/cancel")
     suspend fun cancelBooking(@Path("id") bookingId: String): Booking
 
+    @GET("bookings/stats")
+    suspend fun ownerStats(): OwnerStats
+
     @POST("auth/signup")
     suspend fun signup(@Body request: SignupRequest): AuthResponse
 

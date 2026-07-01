@@ -78,12 +78,35 @@ def test_simulate_rejects_other_users_booking(client: TestClient) -> None:
     assert r.status_code == 404
 
 
-def test_demo_route_is_deterministic_and_local() -> None:
-    from app.routers.live import _demo_route
+def test_ws_allows_assigned_walker(client: TestClient) -> None:
+    """The assigned walker streams the GPS fixes — they must be able to join
+    the channel even though the booking belongs to the owner."""
+    owner = _signup(client)
+    bid = _booking(client, owner)  # booked with seeded walker wlk_sam
+    walker_login = client.post(
+        "/auth/login", json={"email": "sam@pawwalk.app", "password": "PawwalkDemo1!"}
+    )
+    assert walker_login.status_code == 200
+    walker_token = walker_login.json()["access_token"]
 
-    route = _demo_route()
+    with client.websocket_connect(f"/ws/track/{bid}?token={walker_token}") as ws:
+        assert ws.receive_json()["type"] == "history"
+        ws.send_json({"type": "position", "lat": 37.7749, "lng": -122.4194})
+        assert ws.receive_json()["type"] == "position"
+
+    track = client.get(
+        f"/bookings/{bid}/track", headers={"Authorization": f"Bearer {walker_token}"}
+    )
+    assert track.status_code == 200
+    assert len(track.json()) == 1
+
+
+def test_demo_route_is_deterministic_and_local() -> None:
+    from app.live import demo_route
+
+    route = demo_route()
     assert len(route) == 45
-    assert route == _demo_route()  # no RNG
+    assert route == demo_route()  # no RNG
     lats = [lat for lat, _ in route]
     lngs = [lng for _, lng in route]
     assert all(37.74 < lat < 37.77 for lat in lats)  # stays near the Sunset District

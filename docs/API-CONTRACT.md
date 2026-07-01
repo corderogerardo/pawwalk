@@ -125,9 +125,41 @@ POST /payments/webhook        → 200 { "received": true }
 ```
 Stripe-only (configure this URL in the Stripe dashboard, not called by mobile clients). Verifies the `Stripe-Signature` header against `PAWWALK_STRIPE_WEBHOOK_SECRET` — 400 if unconfigured or the signature is invalid. On `payment_intent.succeeded`, flips the matching booking to `confirmed`.
 
+### Owner home stats  (owner only)
+Real numbers for the Home screen — computed from completed bookings and their
+recorded GPS tracks.
+```
+GET /bookings/stats  (Bearer)  → 200 OwnerStats
+```
+```jsonc
+// OwnerStats
+{
+  "distance_km": 2.7,              // total tracked distance across completed walks
+  "streak_days": 2,                // consecutive days (UTC) with a completed walk
+  "recent_walks": [                // newest first, max 3
+    {
+      "booking_id": "bkg_…",
+      "dog_name": "Mochi",
+      "walker_name": "Sam Rivera",
+      "start_time": "2026-06-30T18:00:00Z",
+      "duration_minutes": 45,
+      "distance_km": 1.36,
+      "sparkline": [0.6, 1.0, 0.8, 0.7, 0.9, 0.4]   // per-segment distance profile, 0..1; [] if no GPS track
+    }
+  ]
+}
+```
+
+### Waitlist  (public, no auth)
+Landing-page signups. Body never reveals whether the email was already listed.
+```
+POST /waitlist { "email": "you@example.com" }  → 201 { "status": "ok" }   // 200 on repeat
+```
+
 ### Live GPS tracking
 Real-time walk tracking. The walker's device publishes GPS fixes; the owner
-subscribes and sees them live. Both require the caller to own the booking.
+subscribes and sees them live. Both endpoints and the socket admit the booking's
+**owner or the assigned walker's login** (`404`/`4404` for anyone else).
 ```
 GET /bookings/{booking_id}/track  (Bearer)  → 200 [Position]   // path recorded so far
 WS  /ws/track/{booking_id}?token=<JWT>                          // live channel
@@ -140,7 +172,7 @@ WebSocket protocol (JSON frames):
 - On connect the server sends the history: `{ "type": "history", "points": [Position, …] }`
 - Client → server (walker publishing a fix): `{ "type": "position", "lat": 37.77, "lng": -122.42 }`
 - Server → all subscribers (owner + walker): `{ "type": "position", "lat", "lng", "recorded_at" }`
-- Auth is the `?token=` query param (WebSockets can't set an `Authorization` header from native clients). Bad/missing token closes with `4401`; a booking that isn't the caller's closes with `4404`.
+- Auth is the `?token=` query param (WebSockets can't set an `Authorization` header from native clients). Bad/missing token closes with `4401`; a caller who is neither the booking's owner nor its assigned walker closes with `4404`.
 
 Positions persist to a `positions` table. On Postgres a PostGIS `geog` column is
 kept in sync by a trigger (migration `0002`) so spatial queries are ready; on

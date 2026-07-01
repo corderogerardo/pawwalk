@@ -60,7 +60,7 @@ private val DAY_FMT = DateTimeFormatter.ofPattern("EEE MMM d").withZone(ZoneId.s
 @Composable
 fun HomeScreen(
     user: User?,
-    onTrack: () -> Unit,
+    onTrack: (dogName: String?) -> Unit,
     onBook: () -> Unit = {},
     onProfile: () -> Unit = {},
     onAssistant: () -> Unit = {},
@@ -83,13 +83,14 @@ fun HomeScreen(
             DogHeader(c, user, state.pets.firstOrNull())
             Box(Modifier.fillMaxWidth().height(1.dp).background(c.ink.copy(alpha = 0.12f)))
             val up = state.upcoming
-            if (up != null) NextWalkCard(c, up.booking, up.walker, onTrack, onAssistant)
+            if (up != null) NextWalkCard(c, up.booking, up.walker, { onTrack(up.booking.dogName) }, onAssistant)
             else EmptyWalkCard(c, onBook, onAssistant)
-            StatsRow(c, state.weekCount)
-            RecentWalks(c, onViewBookings)
+            StatsRow(c, state.weekCount, state.stats)
+            RecentWalks(c, state.stats?.recentWalks ?: emptyList(), onViewBookings)
         }
         HudTabBar(
-            c, onTrack, onBook, onProfile,
+            c, { onTrack(state.upcoming?.booking?.dogName ?: state.pets.firstOrNull()?.name) },
+            onBook, onProfile,
             Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(16.dp)
         )
     }
@@ -97,12 +98,19 @@ fun HomeScreen(
 
 @Composable
 private fun StatusRow(c: BrandColors) {
+    // The device's real UTC offset (the design's "UTC−7" chip, minus the fake latitude).
+    val offsetHours = ZoneId.systemDefault().rules.getOffset(Instant.now()).totalSeconds / 3600
+    val utcLabel = when {
+        offsetHours > 0 -> "UTC+$offsetHours"
+        offsetHours < 0 -> "UTC−${-offsetHours}"
+        else -> "UTC"
+    }
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         HudDot(c.signalGreen)
         Spacer(Modifier.width(7.dp))
         MonoText("Tracking ready", c.ink.copy(alpha = 0.6f))
         Spacer(Modifier.weight(1f))
-        MonoText("37.77°N · UTC−7", c.ink.copy(alpha = 0.38f), sizeSp = 9f, weight = FontWeight.Normal,
+        MonoText(utcLabel, c.ink.copy(alpha = 0.38f), sizeSp = 9f, weight = FontWeight.Normal,
             trackingEm = 0.08f, upper = false)
     }
 }
@@ -253,11 +261,15 @@ private fun EmptyWalkCard(c: BrandColors, onBook: () -> Unit, onChat: () -> Unit
 }
 
 @Composable
-private fun StatsRow(c: BrandColors, weekCount: Int) {
+private fun StatsRow(c: BrandColors, weekCount: Int, stats: com.pawwalk.android.data.OwnerStats?) {
+    val distanceKm = stats?.distanceKm ?: 0.0
+    val streakDays = stats?.streakDays ?: 0
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
         StatTile(c, "This week", "%02d".format(weekCount), "walks", (weekCount / 5f).coerceAtMost(1f), Modifier.weight(1f))
-        StatTile(c, "Distance", "12.3", "km", 0.82f, Modifier.weight(1f))
-        StatTile(c, "Streak", "09", "days", 0.75f, Modifier.weight(1f), accent = true)
+        StatTile(c, "Distance", "%.1f".format(distanceKm), "km",
+            (distanceKm / 20f).toFloat().coerceAtMost(1f), Modifier.weight(1f))
+        StatTile(c, "Streak", "%02d".format(streakDays), "days",
+            (streakDays / 12f).coerceAtMost(1f), Modifier.weight(1f), accent = true)
     }
 }
 
@@ -290,8 +302,14 @@ private fun StatTile(
     }
 }
 
+private val WEEKDAY_FMT = DateTimeFormatter.ofPattern("EEE").withZone(ZoneId.systemDefault())
+
 @Composable
-private fun RecentWalks(c: BrandColors, onViewAll: () -> Unit) {
+private fun RecentWalks(
+    c: BrandColors,
+    walks: List<com.pawwalk.android.data.RecentWalk>,
+    onViewAll: () -> Unit,
+) {
     Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().padding(bottom = 2.dp), verticalAlignment = Alignment.CenterVertically) {
             MonoText("§ Recent walks", c.ink.copy(alpha = 0.6f), trackingEm = 0.1f)
@@ -299,10 +317,28 @@ private fun RecentWalks(c: BrandColors, onViewAll: () -> Unit) {
             MonoText("View all", c.accent, sizeSp = 9f, weight = FontWeight.Normal, trackingEm = 0.08f,
                 modifier = Modifier.clickable { onViewAll() })
         }
-        RecentWalkRow(c, listOf(22f, 11f, 16f, 6f, 13f, 5f), "Riverside loop", "Sat · 45 min · 2.6 km · Elena V.")
-        RecentWalkRow(c, listOf(8f, 18f, 10f, 20f, 9f, 15f), "Dunes & pier", "Thu · 30 min · 1.8 km · Marcus T.")
+        if (walks.isEmpty()) {
+            Box(Modifier.fillMaxWidth().height(1.dp).background(c.ink.copy(alpha = 0.12f)))
+            MonoText("Completed walks show up here.", c.ink.copy(alpha = 0.45f), sizeSp = 10f,
+                weight = FontWeight.Normal, trackingEm = 0.06f, upper = false,
+                modifier = Modifier.padding(vertical = 14.dp))
+        } else {
+            walks.forEach { walk ->
+                val day = runCatching { WEEKDAY_FMT.format(Instant.parse(walk.startTime)) }.getOrDefault("—")
+                RecentWalkRow(
+                    c,
+                    sparklinePoints(walk.sparkline),
+                    "${walk.dogName} with ${walk.walkerName}",
+                    "$day · ${walk.durationMinutes} min · ${"%.1f".format(walk.distanceKm)} km",
+                )
+            }
+        }
     }
 }
+
+/** Server sparkline values (0..1, per-segment distance) → the row's 0..28 viewbox. */
+private fun sparklinePoints(values: List<Double>): List<Float> =
+    if (values.size < 2) List(6) { 14f } else values.map { 23f - it.toFloat() * 18f }
 
 @Composable
 private fun RecentWalkRow(c: BrandColors, points: List<Float>, title: String, meta: String) {
@@ -348,7 +384,7 @@ private fun HudTabBar(
         Tab("Home", active = true) { HomeIcon(on, 15.dp) }
         Tab("Book", onClick = onBook) { CalendarIcon(on.copy(alpha = 0.6f), 15.dp) }
         Tab("Track", onClick = onTrack) { LocationArrowIcon(on.copy(alpha = 0.6f), 15.dp) }
-        Tab("Mochi", onClick = onProfile) { PawIcon(on.copy(alpha = 0.6f), 15.dp) }
+        Tab("Profile", onClick = onProfile) { PawIcon(on.copy(alpha = 0.6f), 15.dp) }
     }
 }
 

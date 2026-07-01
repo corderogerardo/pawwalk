@@ -26,8 +26,8 @@ class WalkerTable(SQLModel, table=True):
     # Stored as a JSON column (not comma-joined) so values round-trip as a
     # real list without ad-hoc parsing.
     neighborhoods: list[str] = Field(default_factory=list, sa_column=Column(JSON))
-    # Links a walker-role user to their public walker profile. Null for the
-    # seeded demo walkers (no login).
+    # Links a walker-role user to their public walker profile (seeded walkers
+    # get demo login accounts too — see seed.py).
     user_id: str | None = Field(default=None, foreign_key="users.id")
 
 
@@ -69,6 +69,15 @@ class PetTable(SQLModel, table=True):
     age_years: float | None = None
     weight_kg: float | None = None
     notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class WaitlistTable(SQLModel, table=True):
+    """Landing-page waitlist signups (POST /waitlist)."""
+    __tablename__ = "waitlist"
+
+    id: int | None = Field(default=None, primary_key=True)
+    email: str = Field(unique=True, index=True)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 

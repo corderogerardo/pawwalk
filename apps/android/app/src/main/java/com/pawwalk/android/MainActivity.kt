@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.pawwalk.android.data.Booking
 import com.pawwalk.android.data.TokenStore
 import com.pawwalk.android.data.Walker
 import com.pawwalk.android.ui.screens.AssistantScreen
@@ -60,10 +61,22 @@ class MainActivity : ComponentActivity() {
                     } else if (!signedIn) {
                         AuthScreen(authViewModel)
                     } else if (currentUser?.role == "walker") {
-                        WalkerScreen(
-                            walkerName = currentUser?.name ?: "Walker",
-                            onLogout = { authViewModel.logout() },
-                        )
+                        // The walker streams GPS for a walk that's underway.
+                        var liveWalk by remember { mutableStateOf<Booking?>(null) }
+                        val walk = liveWalk
+                        if (walk != null) {
+                            LiveScreen(
+                                onClose = { liveWalk = null },
+                                bookingId = walk.id,
+                                dogName = walk.dogName,
+                            )
+                        } else {
+                            WalkerScreen(
+                                walkerName = currentUser?.name ?: "Walker",
+                                onLogout = { authViewModel.logout() },
+                                onTrack = { liveWalk = it },
+                            )
+                        }
                     } else {
                         // ponytail: state-based nav instead of Navigation Compose — one screen
                         // stack is plenty for this flow, add a real nav graph if it grows.
@@ -72,13 +85,16 @@ class MainActivity : ComponentActivity() {
                             when (current) {
                                 is Screen.Home -> HomeScreen(
                                     user = currentUser,
-                                    onTrack = { screen = Screen.Live },
+                                    onTrack = { dog -> screen = Screen.Live(dog) },
                                     onBook = { screen = Screen.Walkers },
                                     onProfile = { screen = Screen.Profile },
                                     onAssistant = { screen = Screen.Assistant },
                                     onViewBookings = { screen = Screen.Bookings },
                                 )
-                                is Screen.Live -> LiveScreen(onClose = { screen = Screen.Home })
+                                is Screen.Live -> LiveScreen(
+                                    onClose = { screen = Screen.Home },
+                                    dogName = current.dogName,
+                                )
                                 is Screen.Walkers -> WalkersScreen(
                                     onWalkerSelected = { walker -> screen = Screen.CreateBooking(walker) },
                                 )
@@ -112,7 +128,7 @@ class MainActivity : ComponentActivity() {
 /** The post-login screen stack. A sealed interface keeps Crossfade's targetState typed and lets CreateBooking carry its walker. */
 private sealed interface Screen {
     data object Home : Screen
-    data object Live : Screen
+    data class Live(val dogName: String? = null) : Screen
     data object Walkers : Screen
     data class CreateBooking(val walker: Walker) : Screen
     data object Bookings : Screen

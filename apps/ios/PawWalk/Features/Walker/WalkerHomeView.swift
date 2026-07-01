@@ -36,6 +36,7 @@ struct WalkerHomeView: View {
     @Environment(AuthSession.self) private var auth
     @State private var model = WalkerViewModel()
     @State private var showEdit = false
+    @State private var trackingWalk: Booking?
 
     var body: some View {
         NavigationStack {
@@ -58,6 +59,9 @@ struct WalkerHomeView: View {
                     Task { await model.updateProfile(update); showEdit = false }
                 }
             }
+            .fullScreenCover(item: $trackingWalk) { walk in
+                LiveTrackingView(bookingID: walk.id, dogName: walk.dogName)
+            }
         }
     }
 
@@ -78,7 +82,9 @@ struct WalkerHomeView: View {
                             .padding(.top, 8)
                     } else {
                         ForEach(bookings) { booking in
-                            WalkRow(booking: booking) { action in Task { await model.act(booking, action) } }
+                            WalkRow(booking: booking,
+                                    onAction: { action in Task { await model.act(booking, action) } },
+                                    onTrack: { trackingWalk = booking })
                         }
                     }
                 }
@@ -109,6 +115,9 @@ struct WalkerHomeView: View {
 private struct WalkRow: View {
     let booking: Booking
     var onAction: (String) -> Void
+    /// Opens live GPS streaming for a walk that's underway — the walker's
+    /// device feeds the owner's map.
+    var onTrack: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -137,6 +146,16 @@ private struct WalkRow: View {
             case .confirmed:
                 actionButton("Start walk", "start", filled: true)
             case .inProgress:
+                Button(action: onTrack) {
+                    HStack(spacing: 5) {
+                        Image(systemName: "location.fill").font(.system(size: 10))
+                        Text("Stream GPS").font(.dm(12, .semibold))
+                    }
+                    .foregroundStyle(Brand.onInverse)
+                    .padding(.horizontal, 14).frame(height: 34)
+                    .background(Brand.signalGreen)
+                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                }
                 actionButton("Complete", "complete", filled: true)
             case .completed, .cancelled:
                 EmptyView()

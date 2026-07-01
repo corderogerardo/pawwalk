@@ -8,7 +8,6 @@ the REST `/bookings` endpoints.
 from __future__ import annotations
 
 import asyncio
-import math
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlmodel import Session
@@ -16,7 +15,7 @@ from sqlmodel import Session
 from .. import data
 from ..db import engine, get_session
 from ..deps import get_current_user
-from ..live import hub
+from ..live import demo_route, hub
 from ..schemas import Position, User
 from ..security import decode_token
 
@@ -30,7 +29,7 @@ def get_track(
     current_user: User = Depends(get_current_user),
 ) -> list[Position]:
     """The path recorded so far — handy for an initial render before the socket opens."""
-    if data.get_booking(session, booking_id, current_user.id) is None:
+    if not data.can_access_booking(session, booking_id, current_user.id):
         raise HTTPException(status_code=404, detail="Booking not found")
     return data.list_positions(session, booking_id)
 
@@ -45,28 +44,13 @@ async def simulate(
     can see movement on a stationary simulator (no phone walk needed). Publishes
     to the same hub + `positions` table the real walker would.
     """
-    if data.get_booking(session, booking_id, current_user.id) is None:
+    if not data.can_access_booking(session, booking_id, current_user.id):
         raise HTTPException(status_code=404, detail="Booking not found")
-    route = _demo_route()
+    route = demo_route()
     # ponytail: fire-and-forget task, fine for a single-process demo. If a walk
     # can be simulated concurrently at scale, track/cancel these tasks.
     asyncio.create_task(_replay(booking_id, route))
     return {"status": "started", "points": len(route)}
-
-
-def _demo_route(n: int = 45) -> list[tuple[float, float]]:
-    """A smooth ~300 m loop near the Sunset District (matches Mochi's home).
-    Deterministic (no RNG) so the demo looks the same every run."""
-    lat0, lng0 = 37.7540, -122.4940
-    m_per_deg_lat = 111_320.0
-    m_per_deg_lng = 111_320.0 * math.cos(math.radians(lat0))
-    points: list[tuple[float, float]] = []
-    for i in range(n):
-        t = i / (n - 1)
-        east = 220 * math.sin(2 * math.pi * t) + 60 * math.sin(4 * math.pi * t)
-        north = 180 * (1 - math.cos(2 * math.pi * t)) - 90 * math.sin(2 * math.pi * t)
-        points.append((lat0 + north / m_per_deg_lat, lng0 + east / m_per_deg_lng))
-    return points
 
 
 async def _replay(booking_id: str, route: list[tuple[float, float]]) -> None:
@@ -89,8 +73,8 @@ async def track(
     if user_id is None:
         await websocket.close(code=4401)  # unauthorized
         return
-    if data.get_booking(session, booking_id, user_id) is None:
-        await websocket.close(code=4404)  # not the caller's booking
+    if not data.can_access_booking(session, booking_id, user_id):
+        await websocket.close(code=4404)  # neither the owner nor the assigned walker
         return
 
     await websocket.accept()

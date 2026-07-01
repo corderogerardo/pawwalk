@@ -97,7 +97,12 @@ class WalkerViewModel : ViewModel() {
 }
 
 @Composable
-fun WalkerScreen(walkerName: String, onLogout: () -> Unit, viewModel: WalkerViewModel = viewModel()) {
+fun WalkerScreen(
+    walkerName: String,
+    onLogout: () -> Unit,
+    onTrack: (Booking) -> Unit = {},
+    viewModel: WalkerViewModel = viewModel(),
+) {
     val c = Hud.colors
     val state by viewModel.state.collectAsState()
     var showEdit by remember { mutableStateOf(false) }
@@ -137,7 +142,7 @@ fun WalkerScreen(walkerName: String, onLogout: () -> Unit, viewModel: WalkerView
                     }
                 else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(state.bookings, key = { it.id }) { b ->
-                        WalkCard(c, b) { action -> viewModel.act(b.id, action) }
+                        WalkCard(c, b, onTrack = { onTrack(b) }) { action -> viewModel.act(b.id, action) }
                     }
                 }
             }
@@ -152,7 +157,12 @@ fun WalkerScreen(walkerName: String, onLogout: () -> Unit, viewModel: WalkerView
 }
 
 @Composable
-private fun WalkCard(c: BrandColors, booking: Booking, onAction: (String) -> Unit) {
+private fun WalkCard(
+    c: BrandColors,
+    booking: Booking,
+    onTrack: () -> Unit = {},
+    onAction: (String) -> Unit,
+) {
     Column(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
             .border(1.dp, c.ink.copy(alpha = 0.12f), RoundedCornerShape(16.dp)).padding(16.dp)
@@ -174,6 +184,15 @@ private fun WalkCard(c: BrandColors, booking: Booking, onAction: (String) -> Uni
         }
         if (actions.isNotEmpty()) {
             Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (booking.status == "in_progress") {
+                    // The walker's device feeds the owner's live map.
+                    Box(
+                        Modifier.height(34.dp).clip(RoundedCornerShape(9.dp))
+                            .background(c.signalGreen)
+                            .clickable { onTrack() }.padding(horizontal = 14.dp),
+                        contentAlignment = Alignment.Center,
+                    ) { DmText("Stream GPS", c.onInverse, sizeSp = 12f, weight = FontWeight.SemiBold) }
+                }
                 actions.forEachIndexed { i, (label, action) ->
                     val filled = i == 0
                     Box(

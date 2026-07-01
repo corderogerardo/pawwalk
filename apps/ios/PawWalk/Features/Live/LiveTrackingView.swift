@@ -6,6 +6,9 @@ import SwiftUI
 /// (docs/FUNCTIONAL-REVIEW.md N7). No map tiles = no map cost.
 struct LiveTrackingView: View {
     var bookingID: String? = nil
+    /// The dog on this walk (from the booking) — shown in the HUD instead of a
+    /// hardcoded name.
+    var dogName: String? = nil
 
     @Environment(\.dismiss) private var dismiss
     @State private var tracker = LiveTracker()
@@ -16,7 +19,7 @@ struct LiveTrackingView: View {
             Brand.inverse.ignoresSafeArea()
 
             TimelineView(.animation) { timeline in
-                MapCanvas(date: timeline.date, fixes: tracker.fixes)
+                MapCanvas(date: timeline.date, fixes: tracker.fixes, dogName: dogName ?? "Your dog")
                     .ignoresSafeArea()
             }
 
@@ -120,16 +123,11 @@ struct LiveTrackingView: View {
                 .frame(width: 40, height: 40)
                 .overlay(Image(systemName: "pawprint.fill").font(.system(size: 16)).foregroundStyle(on.opacity(0.5)))
             VStack(alignment: .leading, spacing: 2) {
-                Text("Mochi").font(.dm(14, .semibold)).foregroundStyle(on)
+                Text(dogName ?? "Your dog").font(.dm(14, .semibold)).foregroundStyle(on)
                 MonoCaption("\(tracker.fixes.count) fixes · live", size: 9, weight: .regular,
                             tracking: 0.07, color: on.opacity(0.6))
             }
             Spacer()
-            Button {} label: {
-                Image(systemName: "phone.fill").font(.system(size: 15)).foregroundStyle(on)
-                    .frame(width: 42, height: 42)
-                    .background(Brand.signalGreen, in: RoundedRectangle(cornerRadius: 13))
-            }
         }
         .padding(EdgeInsets(top: 11, leading: 12, bottom: 11, trailing: 12))
         .background(Color(hex: 0x2A3440).opacity(0.65))
@@ -166,6 +164,7 @@ struct LiveTrackingView: View {
 private struct MapCanvas: View {
     let date: Date
     let fixes: [LiveTracker.Fix]
+    let dogName: String
     @Environment(\.self) private var env
 
     var body: some View {
@@ -225,11 +224,13 @@ private struct MapCanvas: View {
             ctx.stroke(Path(ellipseIn: CGRect(x: cp.x - 8, y: cp.y - 8, width: 16, height: 16)),
                        with: .color(onColor), lineWidth: 2.5)
 
-            // "MOCHI · HERE" label.
-            let labelRect = CGRect(x: cp.x + 12, y: cp.y - 9, width: 106, height: 19)
+            // "<DOG> · HERE" label, sized to the dog's actual name.
+            let labelText = "\(dogName.uppercased()) · HERE"
+            let label = ctx.resolve(Text(labelText).font(.mono(9)).foregroundColor(onColor))
+            let textSize = label.measure(in: CGSize(width: 300, height: 19))
+            let labelRect = CGRect(x: cp.x + 12, y: cp.y - 9, width: textSize.width + 18, height: 19)
             ctx.fill(Path(roundedRect: labelRect, cornerRadius: 5), with: .color(inverse.opacity(0.82)))
             ctx.stroke(Path(roundedRect: labelRect, cornerRadius: 5), with: .color(onColor.opacity(0.18)), lineWidth: 1)
-            let label = ctx.resolve(Text("MOCHI · HERE").font(.mono(9)).foregroundColor(onColor))
             ctx.draw(label, at: CGPoint(x: labelRect.minX + 9, y: labelRect.midY), anchor: .leading)
         }
     }

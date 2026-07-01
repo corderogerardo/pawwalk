@@ -43,7 +43,10 @@ struct HomeView: View {
                 .padding(.horizontal, 16)
         }
         .task { await model.load() }
-        .fullScreenCover(isPresented: $showLive) { LiveTrackingView(bookingID: model.upcoming?.booking.id) }
+        .fullScreenCover(isPresented: $showLive) {
+            LiveTrackingView(bookingID: model.upcoming?.booking.id,
+                             dogName: model.upcoming?.booking.dogName ?? model.pets.first?.name)
+        }
         .sheet(isPresented: $showBooking) {
             WalkersView(onBooked: { _ in
                 showBooking = false
@@ -63,9 +66,16 @@ struct HomeView: View {
                 MonoCaption("Tracking ready")
             }
             Spacer()
-            MonoCaption("37.77°N · UTC−7", size: 9, weight: .regular,
+            MonoCaption(utcOffsetLabel, size: 9, weight: .regular,
                         tracking: 0.08, color: Brand.ink.opacity(0.38))
         }
+    }
+
+    /// The device's real UTC offset (the design's "UTC−7" chip, minus the fake latitude).
+    private var utcOffsetLabel: String {
+        let hours = TimeZone.current.secondsFromGMT() / 3600
+        if hours == 0 { return "UTC" }
+        return hours > 0 ? "UTC+\(hours)" : "UTC−\(-hours)"
     }
 
     private var dogHeader: some View {
@@ -94,8 +104,10 @@ struct HomeView: View {
         HStack(spacing: 9) {
             StatTile(label: "This week", value: String(format: "%02d", model.weekCount),
                      unit: "walks", progress: min(CGFloat(model.weekCount) / 5, 1))
-            StatTile(label: "Distance", value: "12.3", unit: "km", progress: 0.82)
-            StatTile(label: "Streak", value: "09", unit: "days", progress: 0.75, accent: true)
+            StatTile(label: "Distance", value: String(format: "%.1f", model.stats?.distanceKm ?? 0),
+                     unit: "km", progress: min(CGFloat(model.stats?.distanceKm ?? 0) / 20, 1))
+            StatTile(label: "Streak", value: String(format: "%02d", model.stats?.streakDays ?? 0),
+                     unit: "days", progress: min(CGFloat(model.stats?.streakDays ?? 0) / 12, 1), accent: true)
         }
     }
 
@@ -109,11 +121,32 @@ struct HomeView: View {
                 }
             }
             .padding(.bottom, 2)
-            RecentWalkRow(points: [22, 11, 16, 6, 13, 5], title: "Riverside loop",
-                          meta: "Sat · 45 min · 2.6 km · Elena V.")
-            RecentWalkRow(points: [8, 18, 10, 20, 9, 15], title: "Dunes & pier",
-                          meta: "Thu · 30 min · 1.8 km · Marcus T.")
+            let walks = model.stats?.recentWalks ?? []
+            if walks.isEmpty {
+                MonoCaption("Completed walks show up here.", size: 10, weight: .regular,
+                            tracking: 0.06, color: Brand.ink.opacity(0.45))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 14)
+                    .overlay(Rectangle().fill(Brand.ink.opacity(0.12)).frame(height: 1), alignment: .top)
+            } else {
+                ForEach(walks) { walk in
+                    RecentWalkRow(points: sparklinePoints(walk.sparkline),
+                                  title: "\(walk.dogName) with \(walk.walkerName)",
+                                  meta: walkMeta(walk))
+                }
+            }
         }
+    }
+
+    private func walkMeta(_ walk: RecentWalk) -> String {
+        let day = walk.startTime.formatted(.dateTime.weekday(.abbreviated))
+        return "\(day) · \(walk.durationMinutes) min · \(String(format: "%.1f", walk.distanceKm)) km"
+    }
+
+    /// Server sparkline values (0…1, per-segment distance) → the row's 0…28 viewBox.
+    private func sparklinePoints(_ values: [Double]) -> [CGFloat] {
+        guard values.count > 1 else { return Array(repeating: 14, count: 6) }
+        return values.map { 23 - CGFloat($0) * 18 }
     }
 }
 
@@ -365,7 +398,7 @@ struct HUDTabBar: View {
             tab("house.fill", "Home", active: true) {}
             tab("calendar", "Book", action: onBook)
             tab("location.fill", "Track", action: onTrack)
-            tab("pawprint.fill", "Mochi", action: onProfile)
+            tab("pawprint.fill", "Profile", action: onProfile)
         }
         .padding(6)
         .background(Brand.inverse)

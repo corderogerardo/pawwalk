@@ -25,7 +25,7 @@ final class AssistantViewModel {
 
     func loadWalkers() async {
         guard walkersByID.isEmpty else { return }
-        let walkers = (try? await APIClient.shared.walkers()) ?? Walker.samples
+        let walkers = (try? await APIClient.shared.walkers()) ?? []
         walkersByID = Dictionary(uniqueKeysWithValues: walkers.map { ($0.id, $0) })
     }
 

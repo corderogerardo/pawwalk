@@ -20,6 +20,15 @@ docker compose up --build
 
 Then open **http://localhost:8000/docs** — FastAPI generates interactive Swagger docs from the Pydantic models. Try `POST /assistant/chat` with `{ "message": "walker in the Mission for 60 minutes tomorrow at 3pm" }`.
 
+### Demo accounts (seeded on first startup, password `PawwalkDemo1!`)
+
+| Email | Role | What you get |
+|---|---|---|
+| `demo@pawwalk.app` | owner | Pet **Mochi**, two completed walks with recorded GPS tracks (real Home stats), one upcoming pending walk |
+| `sam@pawwalk.app` / `ari@pawwalk.app` / `jo@pawwalk.app` | walker | Logins for the three public walker profiles — accept/start/complete walks and stream live GPS |
+
+Seeding is idempotent (`app/seed.py`) — it only inserts what's missing, so restarting never duplicates data.
+
 ```bash
 uv run pytest           # run the test suite
 uv run ruff check .     # lint

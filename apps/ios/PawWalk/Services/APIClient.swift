@@ -112,6 +112,11 @@ final class APIClient {
         try await postEmptyBody(Booking.self, path: "bookings/\(id)/cancel", authorized: true)
     }
 
+    /// Real Home-screen numbers: tracked distance, walk streak, recent walks.
+    func ownerStats() async throws -> OwnerStats {
+        try await get(OwnerStats.self, path: "bookings/stats", authorized: true)
+    }
+
     // MARK: - Pets (owner)
 
     func pets() async throws -> [Pet] {

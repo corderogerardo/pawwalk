@@ -20,21 +20,6 @@ struct Walker: Codable, Identifiable, Hashable {
     var priceLabel: String { "$\(pricePer30MinCents / 100) / 30 min" }
 }
 
-extension Walker {
-    /// Shown when the backend isn't running, so the app is never empty.
-    static let samples: [Walker] = [
-        Walker(id: "wlk_sam", name: "Sam Rivera", photoURL: nil, rating: 4.9,
-               pricePer30MinCents: 1800, bio: "10 yrs with dogs. Loves huskies.",
-               neighborhoods: ["Mission", "SoMa"]),
-        Walker(id: "wlk_ari", name: "Ari Chen", photoURL: nil, rating: 4.8,
-               pricePer30MinCents: 2000, bio: "Certified trainer. Great with reactive dogs.",
-               neighborhoods: ["Mission", "Noe Valley"]),
-        Walker(id: "wlk_jo", name: "Jo Park", photoURL: nil, rating: 4.7,
-               pricePer30MinCents: 1600, bio: "Marathoner — your pup will be tired and happy.",
-               neighborhoods: ["SoMa", "Dogpatch"]),
-    ]
-}
-
 enum UserRole: String, Codable {
     case owner, walker
 }
@@ -166,6 +151,44 @@ struct Booking: Codable, Identifiable, Hashable {
     }
 
     var priceLabel: String { "$\(priceCents / 100)" }
+}
+
+// MARK: - Owner home stats (GET /bookings/stats)
+
+struct RecentWalk: Codable, Identifiable, Hashable {
+    let bookingID: String
+    let dogName: String
+    let walkerName: String
+    let startTime: Date
+    let durationMinutes: Int
+    let distanceKm: Double
+    /// Per-segment distance profile of the recorded track, 6 values in 0...1
+    /// (empty when the walk had no GPS track). Drives the sparkline.
+    let sparkline: [Double]
+
+    var id: String { bookingID }
+
+    enum CodingKeys: String, CodingKey {
+        case sparkline
+        case bookingID = "booking_id"
+        case dogName = "dog_name"
+        case walkerName = "walker_name"
+        case startTime = "start_time"
+        case durationMinutes = "duration_minutes"
+        case distanceKm = "distance_km"
+    }
+}
+
+struct OwnerStats: Codable {
+    let distanceKm: Double
+    let streakDays: Int
+    let recentWalks: [RecentWalk]
+
+    enum CodingKeys: String, CodingKey {
+        case distanceKm = "distance_km"
+        case streakDays = "streak_days"
+        case recentWalks = "recent_walks"
+    }
 }
 
 // MARK: - AI assistant (mirrors docs/API-CONTRACT.md)

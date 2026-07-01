@@ -120,6 +120,36 @@ Turned walkers into real accounts and pets into a first-class entity.
 - Migration `0003` (dialect-safe). **Verified:** 28 pytest green, full owner+walker+pets curl flow,
   both clients build (iOS BUILD SUCCEEDED, Android assembleDebug SUCCESSFUL) and launch.
 
+## 3c. De-mock round (shipped 2026-07-01, second pass)
+
+Goal: no mock data anywhere — every number on screen is real or an honest empty state.
+
+- **Live-tracking auth bug (P0)** — the WS + `/track` + `/simulate` were owner-scoped only,
+  so the assigned walker could never stream GPS. Fixed via `data.can_access_booking`
+  (owner OR assigned walker's login). Walkers now get a **Stream GPS** button on
+  in-progress walks (iOS `WalkerHomeView`, Android `WalkerScreen` → `LiveScreen`).
+- **`GET /bookings/stats`** — real Home numbers: total tracked distance (haversine over
+  recorded positions), daily walk streak, and up to 3 recent walks with per-walk distance
+  and a 6-bucket sparkline of the actual route. Both Home screens consume it; Distance/
+  Streak/Recent-walks are no longer decorative.
+- **Sample fallbacks removed** — iOS `Walker.samples` and Android `sampleWalkers` deleted;
+  a dead backend now shows a real error state instead of fake walkers.
+- **Hardcoded cosmetics fixed** — "37.77°N · UTC−7" → device's real UTC offset; "Mochi"
+  tab label → "Profile"; live screen dog name comes from the booking; dead phone button
+  removed from both live screens.
+- **Waitlist is real** — `POST /waitlist` + `waitlist` table (migration `0004`); the
+  landing form posts to it (`NEXT_PUBLIC_API_URL`) with sending/success/error states.
+- **Seeded demo accounts** (password for all: `PawwalkDemo1!`):
+  - `demo@pawwalk.app` — owner **Ger Cordero**, pet **Mochi** (Shiba Inu, 3 y, 9.6 kg),
+    two completed walks with recorded GPS tracks (real distance + 2-day streak on Home)
+    and one upcoming pending walk.
+  - `sam@pawwalk.app`, `ari@pawwalk.app`, `jo@pawwalk.app` — walker logins linked to the
+    three public walker profiles, so the full walker workflow is demoable end to end.
+- **Verified:** 35 pytest green (was 28), ruff clean, iOS `xcodebuild` BUILD SUCCEEDED,
+  Android `assembleDebug` BUILD SUCCESSFUL, landing `next build` clean, and a live curl
+  smoke: demo login → stats → walker accept/start/**track (the fixed auth)**/simulate/
+  complete → owner stats update with the new walk.
+
 ## 4. Changes shipped 2026-07-01
 
 **iOS** (verified: `xcodebuild` BUILD SUCCEEDED, app launches on iPhone 17 Pro sim)

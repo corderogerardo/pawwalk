@@ -23,8 +23,7 @@ final class WalkersViewModel {
             let walkers = try await APIClient.shared.walkers()
             state = .loaded(walkers)
         } catch {
-            // Backend not running yet? Fall back to samples so the app still works.
-            state = .loaded(Walker.samples)
+            state = .failed("Couldn't reach the server. Check your connection and try again.")
         }
     }
 }

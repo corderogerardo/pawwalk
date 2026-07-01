@@ -8,8 +8,24 @@ ever run more than one worker, swap this class for Redis pub/sub behind the same
 from __future__ import annotations
 
 import asyncio
+import math
 
 from fastapi import WebSocket
+
+
+def demo_route(n: int = 45, lat0: float = 37.7540, lng0: float = -122.4940) -> list[tuple[float, float]]:
+    """A smooth ~300 m walking loop near the Sunset District. Deterministic (no
+    RNG) so demos and seeded walk history look the same every run. Used by
+    POST /bookings/{id}/simulate and by seed.py's completed-walk tracks."""
+    m_per_deg_lat = 111_320.0
+    m_per_deg_lng = 111_320.0 * math.cos(math.radians(lat0))
+    points: list[tuple[float, float]] = []
+    for i in range(n):
+        t = i / (n - 1)
+        east = 220 * math.sin(2 * math.pi * t) + 60 * math.sin(4 * math.pi * t)
+        north = 180 * (1 - math.cos(2 * math.pi * t)) - 90 * math.sin(2 * math.pi * t)
+        points.append((lat0 + north / m_per_deg_lat, lng0 + east / m_per_deg_lng))
+    return points
 
 
 class TrackHub:

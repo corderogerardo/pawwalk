@@ -2,24 +2,27 @@ import Foundation
 import Observation
 
 /// Backs `HomeView` with the signed-in user's real data (see
-/// docs/FUNCTIONAL-REVIEW.md N3). Loads bookings + walkers and derives the
-/// "next walk" and a this-week count. Distance/streak stats stay decorative —
-/// the backend has no walk-telemetry yet (that's N7).
+/// docs/FUNCTIONAL-REVIEW.md N3). Loads bookings + walkers + pets and the
+/// server-computed stats (tracked distance, streak, recent walks), and derives
+/// the "next walk" and a this-week count.
 @MainActor
 @Observable
 final class HomeViewModel {
     private(set) var upcoming: (booking: Booking, walker: Walker?)?
     private(set) var weekCount = 0
     private(set) var pets: [Pet] = []
+    private(set) var stats: OwnerStats?
     private(set) var loaded = false
 
     func load() async {
         async let bookingsCall = APIClient.shared.bookings()
         async let walkersCall = APIClient.shared.walkers()
         async let petsCall = APIClient.shared.pets()
+        async let statsCall = APIClient.shared.ownerStats()
         let bookings = (try? await bookingsCall) ?? []
-        let walkers = (try? await walkersCall) ?? Walker.samples
+        let walkers = (try? await walkersCall) ?? []
         pets = (try? await petsCall) ?? []
+        stats = try? await statsCall
         let byID = Dictionary(uniqueKeysWithValues: walkers.map { ($0.id, $0) })
 
         let now = Date()

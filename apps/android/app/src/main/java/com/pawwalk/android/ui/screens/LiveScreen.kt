@@ -59,7 +59,6 @@ import com.pawwalk.android.ui.components.ExpandIcon
 import com.pawwalk.android.ui.components.HudDot
 import com.pawwalk.android.ui.components.MonoText
 import com.pawwalk.android.ui.components.PawIcon
-import com.pawwalk.android.ui.components.PhoneIcon
 import com.pawwalk.android.ui.theme.Hud
 import com.pawwalk.android.ui.theme.JetBrainsMono
 import kotlinx.coroutines.delay
@@ -70,7 +69,13 @@ import kotlin.math.min
 /** PawWalk — Live GPS Tracking (hero). The HUD is now driven by real GPS streamed
  *  over a WebSocket (docs/FUNCTIONAL-REVIEW.md N7). No map tiles = no map cost. */
 @Composable
-fun LiveScreen(onClose: () -> Unit, bookingId: String? = null, viewModel: LiveViewModel = viewModel()) {
+fun LiveScreen(
+    onClose: () -> Unit,
+    bookingId: String? = null,
+    dogName: String? = null,
+    viewModel: LiveViewModel = viewModel(),
+) {
+    val dogLabel = dogName ?: "Your dog"
     BackHandler { onClose() }
     val c = Hud.colors
     val on = c.onInverse
@@ -140,10 +145,13 @@ fun LiveScreen(onClose: () -> Unit, bookingId: String? = null, viewModel: LiveVi
             drawCircle(c.accent, 8f, cp)
             drawCircle(on, 8f, cp, style = Stroke(2.5f))
 
+            // "<DOG> · HERE" label, sized to the dog's actual name.
+            val layout = measurer.measure("${dogLabel.uppercase()} · HERE",
+                style = TextStyle(fontFamily = JetBrainsMono, fontSize = 9f.toSp(), color = on))
             val lblTL = Offset(cp.x + 12f, cp.y - 9f)
-            drawRoundRect(c.inverse.copy(alpha = 0.82f), lblTL, Size(106f, 19f), CornerRadius(5f))
-            drawRoundRect(on.copy(alpha = 0.18f), lblTL, Size(106f, 19f), CornerRadius(5f), style = Stroke(1f))
-            val layout = measurer.measure("MOCHI · HERE", style = TextStyle(fontFamily = JetBrainsMono, fontSize = 9f.toSp(), color = on))
+            val lblSize = Size(layout.size.width + 18f, 19f)
+            drawRoundRect(c.inverse.copy(alpha = 0.82f), lblTL, lblSize, CornerRadius(5f))
+            drawRoundRect(on.copy(alpha = 0.18f), lblTL, lblSize, CornerRadius(5f), style = Stroke(1f))
             drawText(layout, topLeft = Offset(lblTL.x + 9f, lblTL.y + (19f - layout.size.height) / 2f))
         }
 
@@ -211,12 +219,9 @@ fun LiveScreen(onClose: () -> Unit, bookingId: String? = null, viewModel: LiveVi
                 }
                 Spacer(Modifier.width(11.dp))
                 Column(Modifier.weight(1f)) {
-                    DmText("Mochi", on, sizeSp = 14f, weight = FontWeight.SemiBold)
+                    DmText(dogLabel, on, sizeSp = 14f, weight = FontWeight.SemiBold)
                     MonoText("${state.fixes.size} fixes · live", on.copy(alpha = 0.6f), sizeSp = 9f,
                         weight = FontWeight.Normal, trackingEm = 0.07f)
-                }
-                Box(Modifier.size(42.dp).clip(RoundedCornerShape(13.dp)).background(c.signalGreen), Alignment.Center) {
-                    PhoneIcon(on, 15.dp)
                 }
             }
         }

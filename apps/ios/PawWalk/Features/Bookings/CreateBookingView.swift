@@ -82,5 +82,10 @@ struct CreateBookingView: View {
 }
 
 #Preview {
-    CreateBookingView(walker: Walker.samples[0], onBooked: { _ in })
+    CreateBookingView(
+        walker: Walker(id: "wlk_preview", name: "Sam Rivera", photoURL: nil, rating: 4.9,
+                       pricePer30MinCents: 1800, bio: "Preview walker",
+                       neighborhoods: ["Mission", "SoMa"]),
+        onBooked: { _ in }
+    )
 }
