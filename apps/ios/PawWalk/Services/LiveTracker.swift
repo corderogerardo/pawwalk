@@ -33,7 +33,7 @@ final class LiveTracker {
             resolved = bookingID
         } else {
             resolved = (try? await APIClient.shared.bookings())?
-                .first { $0.status != .cancelled }?.id
+                .first { $0.status.isActive }?.id
         }
         guard let bookingID = resolved else { phase = .noBooking; return }
         guard let token = APIClient.shared.bearerToken else { phase = .failed; return }

@@ -65,7 +65,7 @@ class LiveViewModel(app: Application) : AndroidViewModel(app) {
     fun connect(bookingId: String?) {
         viewModelScope.launch {
             val id = bookingId ?: runCatching { BookingRepository.fetchBookings() }.getOrNull()
-                ?.firstOrNull { it.status != "cancelled" }?.id
+                ?.firstOrNull { it.isActive }?.id
             if (id == null) { _state.update { it.copy(phase = Phase.NO_BOOKING) }; return@launch }
             val token = TokenStore.getToken()
             if (token == null) { _state.update { it.copy(phase = Phase.FAILED) }; return@launch }
