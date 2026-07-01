@@ -1,11 +1,16 @@
 import SwiftUI
 
 /// PawWalk — Home / Status. Ported from the design handoff (iOS 01 · Home).
+/// The "next walk" card and this-week count are backed by the user's real
+/// bookings (HomeViewModel); the tab bar reaches Book / Track / Profile.
 struct HomeView: View {
     @Environment(AuthSession.self) private var auth
+    @State private var model = HomeViewModel()
     @State private var showLive = false
     @State private var showBooking = false
     @State private var showBookings = false
+    @State private var showProfile = false
+    @State private var showAssistant = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -16,7 +21,14 @@ struct HomeView: View {
                     statusRow
                     dogHeader
                     Rectangle().fill(Brand.ink.opacity(0.12)).frame(height: 1)
-                    NextWalkCard { showLive = true }
+                    if let up = model.upcoming {
+                        NextWalkCard(booking: up.booking, walker: up.walker,
+                                     onTrack: { showLive = true },
+                                     onChat: { showAssistant = true })
+                    } else {
+                        EmptyWalkCard(onBook: { showBooking = true },
+                                      onChat: { showAssistant = true })
+                    }
                     statsRow
                     recentWalks
                 }
@@ -25,17 +37,23 @@ struct HomeView: View {
                 .padding(.bottom, 110)
             }
 
-            HUDTabBar(onTrack: { showLive = true }, onBook: { showBooking = true })
+            HUDTabBar(onBook: { showBooking = true },
+                      onTrack: { showLive = true },
+                      onProfile: { showProfile = true })
                 .padding(.horizontal, 16)
         }
-        .fullScreenCover(isPresented: $showLive) { LiveTrackingView() }
+        .task { await model.load() }
+        .fullScreenCover(isPresented: $showLive) { LiveTrackingView(bookingID: model.upcoming?.booking.id) }
         .sheet(isPresented: $showBooking) {
             WalkersView(onBooked: { _ in
                 showBooking = false
                 showBookings = true
+                Task { await model.load() }
             })
         }
         .sheet(isPresented: $showBookings) { BookingsView() }
+        .sheet(isPresented: $showProfile) { ProfileView() }
+        .sheet(isPresented: $showAssistant) { AssistantView() }
     }
 
     private var statusRow: some View {
@@ -47,12 +65,6 @@ struct HomeView: View {
             Spacer()
             MonoCaption("37.77°N · UTC−7", size: 9, weight: .regular,
                         tracking: 0.08, color: Brand.ink.opacity(0.38))
-            Button { auth.logOut() } label: {
-                Image(systemName: "rectangle.portrait.and.arrow.right")
-                    .font(.system(size: 13))
-                    .foregroundStyle(Brand.ink.opacity(0.5))
-            }
-            .padding(.leading, 10)
         }
     }
 
@@ -60,16 +72,18 @@ struct HomeView: View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 0) {
                 MonoCaption("Dog · 001", color: Brand.accent)
-                Text("Mochi.")
+                Text(model.pets.first.map { "\($0.name)." } ?? "No pet yet.")
                     .font(.dm(40, .medium)).tracking(-1.6)
                     .foregroundStyle(Brand.ink)
                     .padding(.top, 7)
-                Text("Shiba Inu · 3 yrs · 9.4 kg")
-                    .font(.dm(13.5, .medium)).foregroundStyle(Brand.ink)
+                Text(model.pets.first.flatMap { $0.subtitle.isEmpty ? nil : $0.subtitle } ?? "Add a pet in your profile")
+                    .font(.dm(13.5, .medium)).foregroundStyle(Brand.ink.opacity(model.pets.isEmpty ? 0.5 : 1))
                     .padding(.top, 9)
-                MonoCaption("@ Sunset District", size: 10, weight: .regular,
-                            tracking: 0.1, color: Brand.ink.opacity(0.6))
-                    .padding(.top, 3)
+                if let name = auth.currentUser?.name {
+                    MonoCaption("Owner · \(name)", size: 10, weight: .regular,
+                                tracking: 0.1, color: Brand.ink.opacity(0.6))
+                        .padding(.top, 3)
+                }
             }
             Spacer()
             PawBadge(size: 54)
@@ -78,7 +92,8 @@ struct HomeView: View {
 
     private var statsRow: some View {
         HStack(spacing: 9) {
-            StatTile(label: "This week", value: "04", unit: "walks", progress: 0.66)
+            StatTile(label: "This week", value: String(format: "%02d", model.weekCount),
+                     unit: "walks", progress: min(CGFloat(model.weekCount) / 5, 1))
             StatTile(label: "Distance", value: "12.3", unit: "km", progress: 0.82)
             StatTile(label: "Streak", value: "09", unit: "days", progress: 0.75, accent: true)
         }
@@ -89,7 +104,9 @@ struct HomeView: View {
             HStack {
                 MonoCaption("§ Recent walks", tracking: 0.1)
                 Spacer()
-                MonoCaption("View all", size: 9, weight: .regular, tracking: 0.08, color: Brand.accent)
+                Button { showBookings = true } label: {
+                    MonoCaption("View all", size: 9, weight: .regular, tracking: 0.08, color: Brand.accent)
+                }
             }
             .padding(.bottom, 2)
             RecentWalkRow(points: [22, 11, 16, 6, 13, 5], title: "Riverside loop",
@@ -121,30 +138,46 @@ struct PawBadge: View {
     }
 }
 
-// MARK: - Next walk card (dark)
+// MARK: - Next walk card (dark) — real upcoming booking
 
 struct NextWalkCard: View {
+    let booking: Booking
+    let walker: Walker?
     var onTrack: () -> Void
+    var onChat: () -> Void
     private let on = Brand.onInverse
+
+    private var startLabel: String { booking.startTime.formatted(date: .omitted, time: .shortened) }
+    private var endLabel: String {
+        booking.startTime.addingTimeInterval(Double(booking.durationMinutes) * 60)
+            .formatted(date: .omitted, time: .shortened)
+    }
+    private var dayLabel: String { booking.startTime.formatted(.dateTime.weekday(.abbreviated).month().day()) }
+    private var walkerName: String { walker?.name ?? "Your walker" }
+    private var walkerMeta: String {
+        let hoods = walker?.neighborhoods.prefix(2).joined(separator: ", ")
+        let rating = walker.map { String(format: "★ %.1f", $0.rating) } ?? ""
+        return [rating, hoods].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                MonoCaption("Next walk · Today", color: on.opacity(0.6))
+                MonoCaption("Next walk", color: on.opacity(0.6))
                 Spacer()
                 HStack(spacing: 6) {
                     Circle().fill(Brand.accent).frame(width: 5, height: 5)
-                    MonoCaption("ETA 00:26", size: 9.5, weight: .regular, tracking: 0.08, color: on)
+                    MonoCaption(dayLabel, size: 9.5, weight: .regular, tracking: 0.08, color: on)
                 }
                 .padding(.horizontal, 9).padding(.vertical, 3)
                 .overlay(Capsule().stroke(on.opacity(0.22), lineWidth: 1))
             }
             HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text("16:30").font(.dm(38, .medium)).tracking(-1.5).foregroundStyle(on)
-                Text("→ 17:15").font(.mono(11)).foregroundStyle(on.opacity(0.55))
+                Text(startLabel).font(.dm(38, .medium)).tracking(-1.5).foregroundStyle(on)
+                Text("→ \(endLabel)").font(.mono(11)).foregroundStyle(on.opacity(0.55))
             }
             .padding(.top, 13)
-            MonoCaption("45 min · Neighborhood loop · 2.4 km", size: 10, weight: .regular,
+            MonoCaption("\(booking.durationMinutes) min · \(booking.dogName)", size: 10, weight: .regular,
                         tracking: 0.09, color: on.opacity(0.72))
                 .padding(.top, 6)
 
@@ -156,8 +189,8 @@ struct NextWalkCard: View {
                     .frame(width: 38, height: 38)
                     .overlay(Image(systemName: "person.fill").font(.system(size: 15)).foregroundStyle(on.opacity(0.5)))
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Elena Vega").font(.dm(14, .semibold)).foregroundStyle(on)
-                    MonoCaption("Unit 07 · ★ 4.9 · 312 walks", size: 9, weight: .regular,
+                    Text(walkerName).font(.dm(14, .semibold)).foregroundStyle(on)
+                    MonoCaption(walkerMeta, size: 9, weight: .regular,
                                 tracking: 0.07, color: on.opacity(0.6))
                 }
                 Spacer()
@@ -181,7 +214,7 @@ struct NextWalkCard: View {
                     .background(Brand.accent).foregroundStyle(on)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
-                Button { } label: {
+                Button(action: onChat) {
                     Image(systemName: "bubble.left").font(.system(size: 14))
                         .frame(width: 46, height: 42).foregroundStyle(on)
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(on.opacity(0.22), lineWidth: 1))
@@ -190,6 +223,47 @@ struct NextWalkCard: View {
             .padding(.top, 15)
         }
         .padding(EdgeInsets(top: 17, leading: 18, bottom: 17, trailing: 18))
+        .background(Brand.inverse)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+}
+
+// MARK: - Empty state (no upcoming booking)
+
+struct EmptyWalkCard: View {
+    var onBook: () -> Void
+    var onChat: () -> Void
+    private let on = Brand.onInverse
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            MonoCaption("Next walk", color: on.opacity(0.6))
+            Text("No walks booked")
+                .font(.dm(26, .medium)).tracking(-1).foregroundStyle(on)
+                .padding(.top, 10)
+            MonoCaption("Book a walker and your next walk shows up here.", size: 10, weight: .regular,
+                        tracking: 0.06, color: on.opacity(0.66))
+                .padding(.top, 6)
+            HStack(spacing: 8) {
+                Button(action: onBook) {
+                    HStack(spacing: 7) {
+                        Image(systemName: "calendar").font(.system(size: 12))
+                        Text("Book a walk").font(.dm(13, .semibold))
+                    }
+                    .frame(maxWidth: .infinity).frame(height: 42)
+                    .background(Brand.accent).foregroundStyle(on)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                Button(action: onChat) {
+                    Image(systemName: "bubble.left").font(.system(size: 14))
+                        .frame(width: 46, height: 42).foregroundStyle(on)
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(on.opacity(0.22), lineWidth: 1))
+                }
+            }
+            .padding(.top, 16)
+        }
+        .padding(EdgeInsets(top: 17, leading: 18, bottom: 17, trailing: 18))
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(Brand.inverse)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
@@ -281,8 +355,9 @@ struct Sparkline: View {
 // MARK: - HUD tab bar
 
 struct HUDTabBar: View {
-    var onTrack: () -> Void
     var onBook: () -> Void = {}
+    var onTrack: () -> Void = {}
+    var onProfile: () -> Void = {}
     private let on = Brand.onInverse
 
     var body: some View {
@@ -290,7 +365,7 @@ struct HUDTabBar: View {
             tab("house.fill", "Home", active: true) {}
             tab("calendar", "Book", action: onBook)
             tab("location.fill", "Track", action: onTrack)
-            tab("pawprint.fill", "Mochi") {}
+            tab("pawprint.fill", "Mochi", action: onProfile)
         }
         .padding(6)
         .background(Brand.inverse)

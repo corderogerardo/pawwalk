@@ -37,8 +37,8 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    fun signup(email: String, password: String, name: String) = runAuthCall {
-        AuthRepository.signup(email, password, name)
+    fun signup(email: String, password: String, name: String, role: String) = runAuthCall {
+        AuthRepository.signup(email, password, name, role)
     }
 
     fun login(email: String, password: String) = runAuthCall {

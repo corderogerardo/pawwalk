@@ -12,7 +12,11 @@ struct ContentView: View {
             if auth.isRestoring {
                 Brand.canvas.ignoresSafeArea()
             } else if auth.signedIn {
-                HomeView()
+                if auth.currentUser?.role == .walker {
+                    WalkerHomeView()
+                } else {
+                    HomeView()
+                }
             } else {
                 AuthView()
             }

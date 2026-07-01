@@ -49,3 +49,6 @@ npm-debug.log*
 # ---------- Editors / misc ----------
 .vscode/
 !.vscode/extensions.json
+
+# ---------- Tooling indexes (not source) ----------
+.codegraph/

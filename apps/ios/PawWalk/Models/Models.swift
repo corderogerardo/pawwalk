@@ -35,14 +35,19 @@ extension Walker {
     ]
 }
 
+enum UserRole: String, Codable {
+    case owner, walker
+}
+
 struct User: Codable, Identifiable, Hashable {
     let id: String
     let email: String
     let name: String
+    let role: UserRole
     let createdAt: Date
 
     enum CodingKeys: String, CodingKey {
-        case id, email, name
+        case id, email, name, role
         case createdAt = "created_at"
     }
 }
@@ -63,6 +68,56 @@ struct SignupRequest: Codable {
     let email: String
     let password: String
     let name: String
+    let role: String
+}
+
+struct Pet: Codable, Identifiable, Hashable {
+    let id: String
+    let name: String
+    let breed: String
+    let ageYears: Double?
+    let weightKg: Double?
+    let notes: String
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, breed, notes
+        case ageYears = "age_years"
+        case weightKg = "weight_kg"
+        case createdAt = "created_at"
+    }
+
+    var subtitle: String {
+        [breed.isEmpty ? nil : breed,
+         ageYears.map { "\(Int($0)) yrs" },
+         weightKg.map { String(format: "%.1f kg", $0) }]
+            .compactMap { $0 }.joined(separator: " · ")
+    }
+}
+
+struct CreatePetRequest: Codable {
+    let name: String
+    let breed: String
+    let ageYears: Double?
+    let weightKg: Double?
+    let notes: String?
+
+    enum CodingKeys: String, CodingKey {
+        case name, breed, notes
+        case ageYears = "age_years"
+        case weightKg = "weight_kg"
+    }
+}
+
+struct WalkerProfileUpdate: Codable {
+    let bio: String?
+    let pricePer30MinCents: Int?
+    let neighborhoods: [String]?
+
+    enum CodingKeys: String, CodingKey {
+        case bio, neighborhoods
+        case pricePer30MinCents = "price_per_30min_cents"
+    }
 }
 
 struct LoginRequest: Codable {
@@ -113,20 +168,34 @@ struct Booking: Codable, Identifiable, Hashable {
     var priceLabel: String { "$\(priceCents / 100)" }
 }
 
-struct PaymentIntentRequest: Codable {
-    let bookingID: String
+// MARK: - AI assistant (mirrors docs/API-CONTRACT.md)
+
+struct AssistantChatRequest: Codable {
+    let message: String
+}
+
+struct DraftBooking: Codable, Hashable {
+    let walkerID: String
+    let dogName: String?
+    let startTime: Date?
+    let durationMinutes: Int
 
     enum CodingKeys: String, CodingKey {
-        case bookingID = "booking_id"
+        case walkerID = "walker_id"
+        case dogName = "dog_name"
+        case startTime = "start_time"
+        case durationMinutes = "duration_minutes"
     }
 }
 
-struct PaymentIntentResponse: Codable {
-    let clientSecret: String
-    let amountCents: Int
+struct AssistantReply: Codable {
+    let reply: String
+    let suggestedWalkers: [String]
+    let draftBooking: DraftBooking?
 
     enum CodingKeys: String, CodingKey {
-        case clientSecret = "client_secret"
-        case amountCents = "amount_cents"
+        case reply
+        case suggestedWalkers = "suggested_walkers"
+        case draftBooking = "draft_booking"
     }
 }

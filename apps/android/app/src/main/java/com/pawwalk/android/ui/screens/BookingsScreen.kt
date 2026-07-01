@@ -18,7 +18,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,10 +30,6 @@ import com.pawwalk.android.ui.components.DmText
 import com.pawwalk.android.ui.components.MonoText
 import com.pawwalk.android.ui.theme.BrandColors
 import com.pawwalk.android.ui.theme.Hud
-import com.stripe.android.paymentsheet.PaymentSheet
-import com.stripe.android.paymentsheet.PaymentSheetResult
-import com.stripe.android.paymentsheet.rememberPaymentSheet
-import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -45,26 +40,6 @@ private val START_TIME_FORMAT = DateTimeFormatter.ofPattern("EEE, MMM d 'at' h:m
 fun BookingsScreen(onClose: () -> Unit, viewModel: BookingsViewModel = viewModel()) {
     val c = Hud.colors
     val state by viewModel.state.collectAsState()
-    val scope = rememberCoroutineScope()
-
-    val paymentSheet = rememberPaymentSheet { result ->
-        if (result is PaymentSheetResult.Completed) viewModel.load()
-        // ponytail: Canceled/Failed just leave the booking pending — no toast, add if users get confused.
-    }
-
-    fun pay(booking: Booking) {
-        scope.launch {
-            try {
-                val clientSecret = viewModel.fetchPaymentClientSecret(booking.id)
-                paymentSheet.presentWithPaymentIntent(
-                    clientSecret,
-                    PaymentSheet.Configuration(merchantDisplayName = "PawWalk"),
-                )
-            } catch (e: Exception) {
-                // ponytail: surfaced via the same error state Cancel uses — good enough for a learning app.
-            }
-        }
-    }
 
     Box(Modifier.fillMaxSize().background(c.canvas)) {
         Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 20.dp).padding(top = 10.dp)) {
@@ -105,7 +80,6 @@ fun BookingsScreen(onClose: () -> Unit, viewModel: BookingsViewModel = viewModel
                                 BookingCard(
                                     c, booking,
                                     onCancel = { viewModel.cancel(booking.id) },
-                                    onPay = { pay(booking) },
                                 )
                             }
                         }
@@ -116,9 +90,8 @@ fun BookingsScreen(onClose: () -> Unit, viewModel: BookingsViewModel = viewModel
 }
 
 @Composable
-private fun BookingCard(c: BrandColors, booking: Booking, onCancel: () -> Unit, onPay: () -> Unit) {
+private fun BookingCard(c: BrandColors, booking: Booking, onCancel: () -> Unit) {
     val cancellable = booking.status == "pending" || booking.status == "confirmed"
-    val payable = booking.status == "pending"
     Column(
         Modifier
             .fillMaxWidth()
@@ -141,28 +114,15 @@ private fun BookingCard(c: BrandColors, booking: Booking, onCancel: () -> Unit, 
             c.ink.copy(alpha = 0.6f), sizeSp = 9.5f, weight = FontWeight.Normal, trackingEm = 0.06f, upper = false,
             modifier = Modifier.padding(top = 3.dp),
         )
-        if (payable || cancellable) {
+        if (cancellable) {
             Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (payable) {
-                    Row(
-                        Modifier.clip(RoundedCornerShape(10.dp))
-                            .background(c.accent.copy(alpha = 0.14f))
-                            .border(1.dp, c.accent.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
-                            .clickable { onPay() }
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
-                    ) {
-                        MonoText("Pay", c.accent, sizeSp = 9f, trackingEm = 0.08f)
-                    }
-                }
-                if (cancellable) {
-                    Row(
-                        Modifier.clip(RoundedCornerShape(10.dp))
-                            .border(1.dp, c.ink.copy(alpha = 0.2f), RoundedCornerShape(10.dp))
-                            .clickable { onCancel() }
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
-                    ) {
-                        MonoText("Cancel", c.ink.copy(alpha = 0.7f), sizeSp = 9f, trackingEm = 0.08f)
-                    }
+                Row(
+                    Modifier.clip(RoundedCornerShape(10.dp))
+                        .border(1.dp, c.ink.copy(alpha = 0.2f), RoundedCornerShape(10.dp))
+                        .clickable { onCancel() }
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    MonoText("Cancel", c.ink.copy(alpha = 0.7f), sizeSp = 9f, trackingEm = 0.08f)
                 }
             }
         }

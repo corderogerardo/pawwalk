@@ -8,11 +8,6 @@ options:
     iOS: "18.0"
   createIntermediateGroups: true
 
-packages:
-  StripeiOS:
-    url: https://github.com/stripe/stripe-ios-spm
-    from: 24.0.0
-
 settings:
   base:
     SWIFT_VERSION: "6.0"
@@ -26,9 +21,6 @@ targets:
     platform: iOS
     sources:
       - PawWalk
-    dependencies:
-      - package: StripeiOS
-        product: StripePaymentSheet
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.pawwalk.ios
@@ -43,6 +35,8 @@ targets:
         # Dev only: allow the app to reach the backend over http://localhost.
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
+        # Live GPS tracking streams the device location to the walk in progress.
+        NSLocationWhenInUseUsageDescription: PawWalk uses your location to show the live walk route while a walk is in progress.
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         # Bundled brand fonts (DM Sans + JetBrains Mono) in Resources/Fonts.

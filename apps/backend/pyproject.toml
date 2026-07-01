@@ -13,6 +13,7 @@ dependencies = [
     "langgraph>=0.2",
     "httpx>=0.27",
     "sqlmodel>=0.0.21",
+    "alembic>=1.13",
     "pwdlib[bcrypt]>=0.2",
     "pyjwt>=2.9",
     "stripe>=11.0",

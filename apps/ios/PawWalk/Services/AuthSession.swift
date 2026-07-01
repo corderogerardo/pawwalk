@@ -38,8 +38,8 @@ final class AuthSession {
         }
     }
 
-    func signUp(email: String, password: String, name: String) async {
-        await authenticate { try await APIClient.shared.signup(email: email, password: password, name: name) }
+    func signUp(email: String, password: String, name: String, role: UserRole) async {
+        await authenticate { try await APIClient.shared.signup(email: email, password: password, name: name, role: role) }
     }
 
     func logIn(email: String, password: String) async {
@@ -59,10 +59,10 @@ final class AuthSession {
             TokenStore.save(token: auth.accessToken)
             APIClient.shared.bearerToken = auth.accessToken
             currentUser = auth.user
-        } catch APIError.emailTaken {
-            errorMessage = "That email is already registered. Try logging in instead."
+        } catch let error as APIError {
+            errorMessage = error.errorDescription
         } catch {
-            errorMessage = "Something went wrong. Check your details and try again."
+            errorMessage = error.localizedDescription
         }
     }
 }

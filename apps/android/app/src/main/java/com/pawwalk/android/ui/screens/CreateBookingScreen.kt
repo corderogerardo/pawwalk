@@ -38,6 +38,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.pawwalk.android.data.Pet
+import com.pawwalk.android.data.PetRepository
 import com.pawwalk.android.data.Walker
 import com.pawwalk.android.ui.components.ChevronRightIcon
 import com.pawwalk.android.ui.components.DmText
@@ -67,9 +69,15 @@ fun CreateBookingScreen(
     val state by viewModel.state.collectAsState()
 
     var dogName by remember { mutableStateOf("") }
+    var pets by remember { mutableStateOf<List<Pet>>(emptyList()) }
     var duration by remember { mutableStateOf(30) }
     var hoursFromNow by remember { mutableStateOf(2) }
     var validationError by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        pets = runCatching { PetRepository.list() }.getOrDefault(emptyList())
+        if (dogName.isBlank()) pets.firstOrNull()?.let { dogName = it.name }
+    }
 
     val loading = state is CreateBookingViewModel.UiState.Loading
     val serverError = (state as? CreateBookingViewModel.UiState.Error)?.message
@@ -111,23 +119,41 @@ fun CreateBookingScreen(
 
             Spacer(Modifier.height(28.dp))
 
-            MonoText("Dog's name", c.ink.copy(alpha = 0.55f), sizeSp = 9.5f, trackingEm = 0.1f)
-            OutlinedTextField(
-                value = dogName,
-                onValueChange = { dogName = it },
-                modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-                singleLine = true,
-                textStyle = TextStyle(fontFamily = DMSans, color = c.ink),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = c.accent,
-                    unfocusedBorderColor = c.ink.copy(alpha = 0.18f),
-                    cursorColor = c.accent,
-                    focusedContainerColor = c.canvasDeep.copy(alpha = 0.4f),
-                    unfocusedContainerColor = c.canvasDeep.copy(alpha = 0.4f),
-                ),
-            )
+            if (pets.isEmpty()) {
+                MonoText("Dog's name", c.ink.copy(alpha = 0.55f), sizeSp = 9.5f, trackingEm = 0.1f)
+                OutlinedTextField(
+                    value = dogName,
+                    onValueChange = { dogName = it },
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                    singleLine = true,
+                    textStyle = TextStyle(fontFamily = DMSans, color = c.ink),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = c.accent,
+                        unfocusedBorderColor = c.ink.copy(alpha = 0.18f),
+                        cursorColor = c.accent,
+                        focusedContainerColor = c.canvasDeep.copy(alpha = 0.4f),
+                        unfocusedContainerColor = c.canvasDeep.copy(alpha = 0.4f),
+                    ),
+                )
+            } else {
+                MonoText("Which pet", c.ink.copy(alpha = 0.55f), sizeSp = 9.5f, trackingEm = 0.1f)
+                Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    pets.forEach { pet ->
+                        val selected = pet.name == dogName
+                        Row(
+                            Modifier.weight(1f).height(42.dp).clip(RoundedCornerShape(12.dp))
+                                .background(if (selected) c.accent else Color.Transparent)
+                                .border(1.dp, if (selected) c.accent else c.ink.copy(alpha = 0.18f), RoundedCornerShape(12.dp))
+                                .clickable { dogName = pet.name },
+                            horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            DmText(pet.name, if (selected) c.onInverse else c.ink, sizeSp = 13f, weight = FontWeight.SemiBold)
+                        }
+                    }
+                }
+            }
 
             Spacer(Modifier.height(20.dp))
 

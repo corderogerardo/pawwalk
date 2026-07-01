@@ -1,8 +1,17 @@
 import Foundation
 
-enum APIError: Error {
+enum APIError: Error, LocalizedError {
     /// Signup with an email that's already registered (backend returns 409).
     case emailTaken
+    /// Backend returned an error with a server-provided message.
+    case serverError(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .emailTaken: return "That email is already registered. Try logging in instead."
+        case .serverError(let detail): return detail
+        }
+    }
 }
 
 /// Tiny async/await HTTP client for the PawWalk backend.
@@ -35,7 +44,32 @@ final class APIClient {
 
     private var decoder: JSONDecoder {
         let d = JSONDecoder()
-        d.dateDecodingStrategy = .iso8601
+        d.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let string = try container.decode(String.self)
+            // Try ISO8601 with timezone + fractional seconds, then without fractional
+            let iso = ISO8601DateFormatter()
+            iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = iso.date(from: string) { return date }
+            iso.formatOptions = .withInternetDateTime
+            if let date = iso.date(from: string) { return date }
+            // Backend's SQLite loses timezone — try appending Z
+            let withZ = string + "Z"
+            iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = iso.date(from: withZ) { return date }
+            iso.formatOptions = .withInternetDateTime
+            if let date = iso.date(from: withZ) { return date }
+            // Last resort: DateFormatter handles any fractional digit count
+            let df = DateFormatter()
+            df.locale = Locale(identifier: "en_US_POSIX")
+            df.timeZone = TimeZone(secondsFromGMT: 0)
+            for fmt in ["yyyy-MM-dd'T'HH:mm:ss.SSSSSS", "yyyy-MM-dd'T'HH:mm:ss.SSS", "yyyy-MM-dd'T'HH:mm:ss"] {
+                df.dateFormat = fmt
+                if let date = df.date(from: string) { return date }
+                if let date = df.date(from: string + "Z") { return date }
+            }
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date: \(string)")
+        }
         return d
     }
 
@@ -51,8 +85,9 @@ final class APIClient {
 
     // MARK: - Auth
 
-    func signup(email: String, password: String, name: String) async throws -> AuthResponse {
-        try await post(path: "auth/signup", body: SignupRequest(email: email, password: password, name: name))
+    func signup(email: String, password: String, name: String, role: UserRole) async throws -> AuthResponse {
+        try await post(path: "auth/signup",
+                       body: SignupRequest(email: email, password: password, name: name, role: role.rawValue))
     }
 
     func login(email: String, password: String) async throws -> AuthResponse {
@@ -77,10 +112,52 @@ final class APIClient {
         try await postEmptyBody(Booking.self, path: "bookings/\(id)/cancel", authorized: true)
     }
 
-    // MARK: - Payments
+    // MARK: - Pets (owner)
 
-    func createPaymentIntent(bookingID: String) async throws -> PaymentIntentResponse {
-        try await post(path: "payments/intent", body: PaymentIntentRequest(bookingID: bookingID), authorized: true)
+    func pets() async throws -> [Pet] {
+        try await get([Pet].self, path: "pets", authorized: true)
+    }
+
+    func createPet(_ request: CreatePetRequest) async throws -> Pet {
+        try await post(path: "pets", body: request, authorized: true)
+    }
+
+    func deletePet(id: String) async throws {
+        try await delete(path: "pets/\(id)", authorized: true)
+    }
+
+    // MARK: - Walker workflow
+
+    func walkerProfile() async throws -> Walker {
+        try await get(Walker.self, path: "walkers/me", authorized: true)
+    }
+
+    func updateWalkerProfile(_ update: WalkerProfileUpdate) async throws -> Walker {
+        try await patch(path: "walkers/me", body: update, authorized: true)
+    }
+
+    func assignedBookings() async throws -> [Booking] {
+        try await get([Booking].self, path: "bookings/assigned", authorized: true)
+    }
+
+    /// action ∈ accept | decline | start | complete
+    func transitionBooking(id: String, action: String) async throws -> Booking {
+        try await postEmptyBody(Booking.self, path: "bookings/\(id)/\(action)", authorized: true)
+    }
+
+    // MARK: - Assistant
+
+    func assistantChat(message: String) async throws -> AssistantReply {
+        try await post(path: "assistant/chat", body: AssistantChatRequest(message: message), authorized: true)
+    }
+
+    // MARK: - Live tracking
+
+    /// Demo helper — asks the backend to replay a walking route into the live
+    /// channel (see /bookings/{id}/simulate). Response body is ignored.
+    func simulateWalk(bookingID: String) async throws {
+        struct Ack: Decodable {}
+        _ = try await postEmptyBody(Ack.self, path: "bookings/\(bookingID)/simulate", authorized: true)
     }
 
     // MARK: - Request helpers
@@ -91,7 +168,7 @@ final class APIClient {
         var request = URLRequest(url: baseURL.appendingPathComponent(path))
         if authorized { attachAuthorization(to: &request) }
         let (data, response) = try await URLSession.shared.data(for: request)
-        try checkStatus(response)
+        try checkStatus(response, data: data)
         return try decoder.decode(Response.self, from: data)
     }
 
@@ -107,8 +184,30 @@ final class APIClient {
         request.httpBody = try encoder.encode(body)
         if authorized { attachAuthorization(to: &request) }
         let (data, response) = try await URLSession.shared.data(for: request)
-        try checkStatus(response)
+        try checkStatus(response, data: data)
         return try decoder.decode(Response.self, from: data)
+    }
+
+    private func patch<Body: Encodable, Response: Decodable>(
+        path: String, body: Body, authorized: Bool = false
+    ) async throws -> Response {
+        var request = URLRequest(url: baseURL.appendingPathComponent(path))
+        request.httpMethod = "PATCH"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try encoder.encode(body)
+        if authorized { attachAuthorization(to: &request) }
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try checkStatus(response, data: data)
+        return try decoder.decode(Response.self, from: data)
+    }
+
+    /// DELETE — expects 2xx (e.g. 204), decodes nothing.
+    private func delete(path: String, authorized: Bool = false) async throws {
+        var request = URLRequest(url: baseURL.appendingPathComponent(path))
+        request.httpMethod = "DELETE"
+        if authorized { attachAuthorization(to: &request) }
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try checkStatus(response, data: data)
     }
 
     /// POST with no request body (e.g. `/bookings/{id}/cancel`).
@@ -119,7 +218,7 @@ final class APIClient {
         request.httpMethod = "POST"
         if authorized { attachAuthorization(to: &request) }
         let (data, response) = try await URLSession.shared.data(for: request)
-        try checkStatus(response)
+        try checkStatus(response, data: data)
         return try decoder.decode(Response.self, from: data)
     }
 
@@ -128,7 +227,11 @@ final class APIClient {
         request.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
     }
 
-    private func checkStatus(_ response: URLResponse) throws {
+    private struct ServerError: Decodable {
+        let detail: String
+    }
+
+    private func checkStatus(_ response: URLResponse, data: Data) throws {
         guard let http = response as? HTTPURLResponse else { throw URLError(.badServerResponse) }
         if http.statusCode == 401 {
             NotificationCenter.default.post(name: Self.unauthorizedNotification, object: nil)
@@ -136,7 +239,11 @@ final class APIClient {
         switch http.statusCode {
         case 200..<300: return
         case 409: throw APIError.emailTaken
-        default: throw URLError(.badServerResponse)
+        default:
+            if let serverError = try? decoder.decode(ServerError.self, from: data) {
+                throw APIError.serverError(serverError.detail)
+            }
+            throw URLError(.badServerResponse)
         }
     }
 }

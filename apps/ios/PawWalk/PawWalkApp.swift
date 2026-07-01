@@ -8,10 +8,7 @@ struct PawWalkApp: App {
         WindowGroup {
             ContentView()
                 .environment(auth)
-                .task {
-                    StripeConfig.activate()
-                    await auth.restore()
-                }
+                .task { await auth.restore() }
         }
     }
 }

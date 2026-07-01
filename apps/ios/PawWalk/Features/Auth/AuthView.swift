@@ -18,6 +18,7 @@ struct AuthView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var name = ""
+    @State private var role: UserRole = .owner
     @State private var isSubmitting = false
     @State private var validationMessage: String?
 
@@ -53,11 +54,35 @@ struct AuthView: View {
     private var fields: some View {
         VStack(spacing: 12) {
             if mode == .signup {
+                roleToggle
                 AuthField(label: "Name", text: $name, textContentType: .name)
             }
             AuthField(label: "Email", text: $email, keyboard: .emailAddress, textContentType: .emailAddress)
             AuthField(label: "Password", text: $password, isSecure: true,
                       textContentType: mode == .login ? .password : .newPassword)
+        }
+    }
+
+    private var roleToggle: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            MonoCaption("I am a", size: 9, tracking: 0.1)
+            HStack(spacing: 8) {
+                rolePill(.owner, "Pet owner")
+                rolePill(.walker, "Dog walker")
+            }
+        }
+    }
+
+    private func rolePill(_ value: UserRole, _ label: String) -> some View {
+        let selected = role == value
+        return Button { role = value } label: {
+            Text(label)
+                .font(.dm(13, selected ? .semibold : .regular))
+                .foregroundStyle(selected ? Brand.onInverse : Brand.ink)
+                .frame(maxWidth: .infinity).frame(height: 40)
+                .background(selected ? Brand.accent : Color.clear)
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Brand.ink.opacity(selected ? 0 : 0.2), lineWidth: 1))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
     }
 
@@ -103,7 +128,7 @@ struct AuthView: View {
                 if mode == .login {
                     await auth.logIn(email: email, password: password)
                 } else {
-                    await auth.signUp(email: email, password: password, name: name)
+                    await auth.signUp(email: email, password: password, name: name, role: role)
                 }
             }
             return

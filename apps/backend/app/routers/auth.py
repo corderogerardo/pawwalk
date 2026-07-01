@@ -6,6 +6,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 
+from .. import data
 from ..db import get_session
 from ..deps import get_current_user
 from ..models_db import UserTable
@@ -26,11 +27,16 @@ def signup(req: SignupRequest, session: Session = Depends(get_session)) -> AuthR
         email=req.email,
         name=req.name,
         password_hash=hash_password(req.password),
+        role=req.role,
         created_at=datetime.now(timezone.utc),
     )
     session.add(row)
     session.commit()
     session.refresh(row)
+
+    # A walker needs a public profile so owners can find and book them.
+    if req.role == "walker":
+        data.create_walker_profile(session, row.id, row.name)
 
     user = User.model_validate(row, from_attributes=True)
     return AuthResponse(access_token=create_access_token(row.id), user=user)

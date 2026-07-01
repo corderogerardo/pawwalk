@@ -60,6 +60,7 @@ fun AuthScreen(viewModel: AuthViewModel = viewModel()) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
+    var role by remember { mutableStateOf("owner") }
     var validationError by remember { mutableStateOf<String?>(null) }
 
     val loading = state is AuthViewModel.UiState.Loading
@@ -68,7 +69,7 @@ fun AuthScreen(viewModel: AuthViewModel = viewModel()) {
     fun submit() {
         validationError = validate(email, password, name, isSignup)
         if (validationError != null) return
-        if (isSignup) viewModel.signup(email.trim(), password, name.trim())
+        if (isSignup) viewModel.signup(email.trim(), password, name.trim(), role)
         else viewModel.login(email.trim(), password)
     }
 
@@ -99,6 +100,12 @@ fun AuthScreen(viewModel: AuthViewModel = viewModel()) {
             Spacer(Modifier.height(32.dp))
 
             if (isSignup) {
+                MonoText("I am a", c.ink.copy(alpha = 0.55f), sizeSp = 9.5f, trackingEm = 0.1f)
+                Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    RolePill("Pet owner", role == "owner", Modifier.weight(1f)) { role = "owner" }
+                    RolePill("Dog walker", role == "walker", Modifier.weight(1f)) { role = "walker" }
+                }
+                Spacer(Modifier.height(14.dp))
                 AuthField(label = "Name", value = name, onValueChange = { name = it })
                 Spacer(Modifier.height(14.dp))
             }
@@ -157,6 +164,21 @@ fun AuthScreen(viewModel: AuthViewModel = viewModel()) {
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun RolePill(label: String, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val c = Hud.colors
+    Box(
+        modifier.height(40.dp).clip(RoundedCornerShape(10.dp))
+            .background(if (selected) c.accent else Color.Transparent)
+            .border(1.dp, if (selected) Color.Transparent else c.ink.copy(alpha = 0.2f), RoundedCornerShape(10.dp))
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center,
+    ) {
+        DmText(label, if (selected) c.onInverse else c.ink, sizeSp = 13f,
+            weight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
     }
 }
 

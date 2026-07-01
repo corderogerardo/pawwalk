@@ -1,6 +1,5 @@
 import Foundation
 import Observation
-import StripePaymentSheet
 
 /// View model for the Bookings screen. Same `@Observable` + `ViewState` shape
 /// as `WalkersViewModel`.
@@ -14,11 +13,6 @@ final class BookingsViewModel {
     }
 
     private(set) var state: ViewState = .loading
-
-    /// Set once `/payments/intent` returns, so the view can present
-    /// `PaymentSheet`. `nil` means no sheet to show.
-    var paymentSheet: PaymentSheet?
-    var paymentErrorMessage: String?
 
     func load() async {
         state = .loading
@@ -40,20 +34,6 @@ final class BookingsViewModel {
             state = .loaded(bookings)
         } catch {
             // Leave the list as-is — the row's cancel button is still available to retry.
-        }
-    }
-
-    /// Fetches the PaymentIntent client secret for `booking` and builds a
-    /// `PaymentSheet`. The view watches `paymentSheet` and presents it once set.
-    func pay(_ booking: Booking) async {
-        paymentErrorMessage = nil
-        do {
-            let intent = try await APIClient.shared.createPaymentIntent(bookingID: booking.id)
-            var config = PaymentSheet.Configuration()
-            config.merchantDisplayName = "PawWalk"
-            paymentSheet = PaymentSheet(paymentIntentClientSecret: intent.clientSecret, configuration: config)
-        } catch {
-            paymentErrorMessage = "Couldn't start payment. Try again."
         }
     }
 }

@@ -24,3 +24,17 @@ def get_current_user(
     if row is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
     return User.model_validate(row, from_attributes=True)
+
+
+def get_current_owner(current_user: User = Depends(get_current_user)) -> User:
+    """Owner-only routes (pets, creating bookings)."""
+    if current_user.role != "owner":
+        raise HTTPException(status_code=403, detail="This action is for pet owners")
+    return current_user
+
+
+def get_current_walker(current_user: User = Depends(get_current_user)) -> User:
+    """Walker-only routes (assigned walks, status transitions, profile edit)."""
+    if current_user.role != "walker":
+        raise HTTPException(status_code=403, detail="This action is for walkers")
+    return current_user

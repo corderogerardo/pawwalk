@@ -14,6 +14,10 @@ object WalkerRepository {
         sampleWalkers
     }
 
+    suspend fun myProfile(): Walker = api.walkerProfile()
+
+    suspend fun updateProfile(update: WalkerProfileUpdate): Walker = api.updateWalkerProfile(update)
+
     val sampleWalkers = listOf(
         Walker("wlk_sam", "Sam Rivera", null, 4.9, 1800, "10 yrs with dogs. Loves huskies.", listOf("Mission", "SoMa")),
         Walker("wlk_ari", "Ari Chen", null, 4.8, 2000, "Certified trainer. Great with reactive dogs.", listOf("Mission", "Noe Valley")),

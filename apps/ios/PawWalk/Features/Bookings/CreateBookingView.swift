@@ -9,6 +9,7 @@ struct CreateBookingView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var dogName = ""
+    @State private var pets: [Pet] = []
     @State private var startTime = Date().addingTimeInterval(3600)
     @State private var durationMinutes = 30
     @State private var isSubmitting = false
@@ -23,7 +24,13 @@ struct CreateBookingView: View {
                     Text(walker.name).font(.dm(15, .semibold))
                 }
                 Section("Walk details") {
-                    TextField("Dog's name", text: $dogName)
+                    if pets.isEmpty {
+                        TextField("Dog's name", text: $dogName)
+                    } else {
+                        Picker("Pet", selection: $dogName) {
+                            ForEach(pets) { Text($0.name).tag($0.name) }
+                        }
+                    }
                     DatePicker("Start time", selection: $startTime, in: Date()...)
                     Picker("Duration", selection: $durationMinutes) {
                         ForEach(durations, id: \.self) { Text("\($0) min").tag($0) }
@@ -36,6 +43,10 @@ struct CreateBookingView: View {
             }
             .navigationTitle("Book \(walker.name)")
             .navigationBarTitleDisplayMode(.inline)
+            .task {
+                pets = (try? await APIClient.shared.pets()) ?? []
+                if dogName.isEmpty, let first = pets.first { dogName = first.name }
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

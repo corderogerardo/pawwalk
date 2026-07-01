@@ -20,18 +20,33 @@ GET /health  →  200 { "status": "ok", "version": "0.1.0" }
 
 ### Auth
 ```
-POST /auth/signup  { email, password, name }      → 201 AuthResponse
-POST /auth/login   { email, password }            → 200 AuthResponse | 401
-GET  /auth/me      (Bearer)                        → 200 User | 401
+POST /auth/signup  { email, password, name, role? } → 201 AuthResponse
+POST /auth/login   { email, password }              → 200 AuthResponse | 401
+GET  /auth/me      (Bearer)                          → 200 User | 401
 ```
 ```jsonc
 // User
-{ "id": "usr_123", "email": "jane@example.com", "name": "Jane Doe", "created_at": "2026-06-26T19:00:00Z" }
+{ "id": "usr_123", "email": "jane@example.com", "name": "Jane Doe", "role": "owner", "created_at": "2026-06-26T19:00:00Z" }
 
 // AuthResponse
 { "access_token": "eyJ...", "token_type": "bearer", "user": { /* User */ } }
 ```
-`POST /auth/signup` returns `409` if the email is already registered. All `/bookings` endpoints require a valid Bearer token (see below).
+`role` is `"owner"` (default) or `"walker"` — clients show the matching experience after login.
+Signing up as a `walker` also creates a public walker profile (below), so owners can book them.
+`POST /auth/signup` returns `409` if the email is already registered. Owner-only routes return
+`403` for walkers and vice-versa.
+
+### Pets  (owner only)
+```
+POST   /pets            → 201 Pet
+GET    /pets            → 200 [Pet]        (current owner's)
+DELETE /pets/{pet_id}   → 204 | 404
+```
+```jsonc
+// Pet
+{ "id": "pet_123", "name": "Mochi", "breed": "Shiba Inu", "age_years": 3, "weight_kg": 9.4, "notes": "", "created_at": "…" }
+```
+The booking form picks one of these to fill `dog_name` — `bookings` is unchanged.
 
 ### Walkers
 ```
@@ -84,6 +99,20 @@ POST /bookings/{booking_id}/cancel → 200 Booking
 }
 ```
 
+### Walker workflow  (walker only)
+```
+GET  /walkers/me                     → 200 Walker            // own profile
+PATCH /walkers/me { bio?, price_per_30min_cents?, neighborhoods? } → 200 Walker
+GET  /bookings/assigned              → 200 [Booking]         // walks assigned to me
+POST /bookings/{id}/accept           → 200 Booking           // pending  → confirmed
+POST /bookings/{id}/decline          → 200 Booking           // pending  → cancelled
+POST /bookings/{id}/start            → 200 Booking           // confirmed → in_progress
+POST /bookings/{id}/complete         → 200 Booking           // in_progress → completed
+```
+Transitions require the caller to be the **assigned** walker (`404` otherwise) and the
+booking to be in the right start state (`409` otherwise). Owner still has
+`POST /bookings/{id}/cancel` (pending/confirmed → cancelled).
+
 ### Payments
 Requires a valid Bearer token; 404 if the booking isn't the caller's.
 ```
@@ -95,6 +124,34 @@ Returns a real Stripe `PaymentIntent` client secret when `PAWWALK_STRIPE_SECRET_
 POST /payments/webhook        → 200 { "received": true }
 ```
 Stripe-only (configure this URL in the Stripe dashboard, not called by mobile clients). Verifies the `Stripe-Signature` header against `PAWWALK_STRIPE_WEBHOOK_SECRET` — 400 if unconfigured or the signature is invalid. On `payment_intent.succeeded`, flips the matching booking to `confirmed`.
+
+### Live GPS tracking
+Real-time walk tracking. The walker's device publishes GPS fixes; the owner
+subscribes and sees them live. Both require the caller to own the booking.
+```
+GET /bookings/{booking_id}/track  (Bearer)  → 200 [Position]   // path recorded so far
+WS  /ws/track/{booking_id}?token=<JWT>                          // live channel
+```
+```jsonc
+// Position
+{ "lat": 37.7749, "lng": -122.4194, "recorded_at": "2026-07-06T15:03:11Z" }
+```
+WebSocket protocol (JSON frames):
+- On connect the server sends the history: `{ "type": "history", "points": [Position, …] }`
+- Client → server (walker publishing a fix): `{ "type": "position", "lat": 37.77, "lng": -122.42 }`
+- Server → all subscribers (owner + walker): `{ "type": "position", "lat", "lng", "recorded_at" }`
+- Auth is the `?token=` query param (WebSockets can't set an `Authorization` header from native clients). Bad/missing token closes with `4401`; a booking that isn't the caller's closes with `4404`.
+
+Positions persist to a `positions` table. On Postgres a PostGIS `geog` column is
+kept in sync by a trigger (migration `0002`) so spatial queries are ready; on
+SQLite the plain `lat`/`lng` are used, so the feature works with zero setup too.
+
+```
+POST /bookings/{booking_id}/simulate  (Bearer)  → 202 { "status": "started", "points": N }
+```
+Demo helper — replays a deterministic ~300 m walking route into the live channel
+(publishes to the same hub + `positions` table a real walker would), so you can
+see movement on a stationary simulator without walking around with a phone.
 
 ### AI booking assistant (LangGraph + Pydantic AI)
 ```

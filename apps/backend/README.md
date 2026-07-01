@@ -96,7 +96,7 @@ It works **without** an API key (a heuristic parser handles common phrasings). T
 
 ## Known gaps / next up
 
-- No Alembic migrations yet — schema changes rely on `create_all()`, which only adds new tables, never alters existing ones. Add Alembic once the schema settles (see `docs/IMPLEMENTATION-PLAN.md` B12).
+- No Alembic migrations yet — schema changes rely on `create_all()`, which only adds new tables, never alters existing ones. Add Alembic once the schema settles (see `docs/IMPLEMENTATION-PLAN.md` B12). **Until then:** after changing a column in `app/models_db.py`, delete the dev DB and restart so the schema is rebuilt — `rm apps/backend/pawwalk.db && docker compose restart backend`. (Skipping this shows up as `500 … no such column`.)
 - No rate limiting on `/auth/login` — fine for a learning project, not for anything internet-facing.
 
 ## Roadmap (see Notion board)

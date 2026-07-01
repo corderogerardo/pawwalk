@@ -10,9 +10,10 @@ from datetime import datetime
 from enum import Enum
 from typing import Literal
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_serializer
 
 Duration = Literal[30, 45, 60]
+Role = Literal["owner", "walker"]
 
 
 class BookingStatus(str, Enum):
@@ -29,13 +30,22 @@ class User(BaseModel):
     id: str
     email: EmailStr
     name: str
+    role: Role = "owner"
     created_at: datetime
+
+    @field_serializer("created_at")
+    def serialize_dt(self, v: datetime, _info) -> str:
+        s = v.isoformat()
+        if v.tzinfo is None:
+            s += "Z"
+        return s
 
 
 class SignupRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8)
     name: str
+    role: Role = "owner"
 
 
 class LoginRequest(BaseModel):
@@ -59,6 +69,40 @@ class Walker(BaseModel):
     neighborhoods: list[str] = []
 
 
+class WalkerProfileUpdate(BaseModel):
+    """Fields a walker can edit on their own profile (PATCH /walkers/me)."""
+    bio: str | None = None
+    price_per_30min_cents: int | None = None
+    neighborhoods: list[str] | None = None
+
+
+# ---- Pets (owned by an owner-role user) ----
+
+class Pet(BaseModel):
+    id: str
+    name: str
+    breed: str = ""
+    age_years: float | None = None
+    weight_kg: float | None = None
+    notes: str = ""
+    created_at: datetime
+
+    @field_serializer("created_at")
+    def serialize_dt(self, v: datetime, _info) -> str:
+        s = v.isoformat()
+        if v.tzinfo is None:
+            s += "Z"
+        return s
+
+
+class CreatePetRequest(BaseModel):
+    name: str
+    breed: str = ""
+    age_years: float | None = None
+    weight_kg: float | None = None
+    notes: str | None = None
+
+
 class CreateBookingRequest(BaseModel):
     walker_id: str
     dog_name: str
@@ -77,6 +121,13 @@ class Booking(BaseModel):
     price_cents: int
     created_at: datetime
 
+    @field_serializer("start_time", "created_at")
+    def serialize_dt(self, v: datetime, _info) -> str:
+        s = v.isoformat()
+        if v.tzinfo is None:
+            s += "Z"
+        return s
+
 
 class PaymentIntentRequest(BaseModel):
     booking_id: str
@@ -85,6 +136,21 @@ class PaymentIntentRequest(BaseModel):
 class PaymentIntentResponse(BaseModel):
     client_secret: str
     amount_cents: int
+
+
+# ---- Live tracking ----
+
+class Position(BaseModel):
+    lat: float
+    lng: float
+    recorded_at: datetime
+
+    @field_serializer("recorded_at")
+    def serialize_dt(self, v: datetime, _info) -> str:
+        s = v.isoformat()
+        if v.tzinfo is None:
+            s += "Z"
+        return s
 
 
 # ---- AI assistant ----

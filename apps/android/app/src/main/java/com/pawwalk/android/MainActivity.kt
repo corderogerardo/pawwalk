@@ -20,30 +20,31 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pawwalk.android.data.TokenStore
 import com.pawwalk.android.data.Walker
+import com.pawwalk.android.ui.screens.AssistantScreen
 import com.pawwalk.android.ui.screens.AuthScreen
 import com.pawwalk.android.ui.screens.AuthViewModel
 import com.pawwalk.android.ui.screens.BookingsScreen
 import com.pawwalk.android.ui.screens.CreateBookingScreen
 import com.pawwalk.android.ui.screens.HomeScreen
 import com.pawwalk.android.ui.screens.LiveScreen
+import com.pawwalk.android.ui.screens.PetsScreen
+import com.pawwalk.android.ui.screens.ProfileScreen
+import com.pawwalk.android.ui.screens.WalkerScreen
 import com.pawwalk.android.ui.screens.WalkersScreen
 import com.pawwalk.android.ui.theme.Hud
 import com.pawwalk.android.ui.theme.PawWalkTheme
-import com.stripe.android.PaymentConfiguration
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         TokenStore.init(this) // must happen before anything touches Network (auth interceptor reads it)
-        if (BuildConfig.STRIPE_PUBLISHABLE_KEY.isNotEmpty()) {
-            PaymentConfiguration.init(this, BuildConfig.STRIPE_PUBLISHABLE_KEY)
-        }
         enableEdgeToEdge()
         setContent {
             PawWalkTheme {
                 Surface(Modifier.fillMaxSize(), color = Hud.colors.canvas) {
                     val authViewModel: AuthViewModel = viewModel()
                     val signedIn by authViewModel.signedIn.collectAsState()
+                    val currentUser by authViewModel.currentUser.collectAsState()
                     var checkedSession by remember { mutableStateOf(false) }
 
                     if (!checkedSession) {
@@ -58,6 +59,11 @@ class MainActivity : ComponentActivity() {
                         }
                     } else if (!signedIn) {
                         AuthScreen(authViewModel)
+                    } else if (currentUser?.role == "walker") {
+                        WalkerScreen(
+                            walkerName = currentUser?.name ?: "Walker",
+                            onLogout = { authViewModel.logout() },
+                        )
                     } else {
                         // ponytail: state-based nav instead of Navigation Compose — one screen
                         // stack is plenty for this flow, add a real nav graph if it grows.
@@ -65,9 +71,12 @@ class MainActivity : ComponentActivity() {
                         Crossfade(targetState = screen, label = "screen") { current ->
                             when (current) {
                                 is Screen.Home -> HomeScreen(
+                                    user = currentUser,
                                     onTrack = { screen = Screen.Live },
                                     onBook = { screen = Screen.Walkers },
-                                    onLogout = { authViewModel.logout() },
+                                    onProfile = { screen = Screen.Profile },
+                                    onAssistant = { screen = Screen.Assistant },
+                                    onViewBookings = { screen = Screen.Bookings },
                                 )
                                 is Screen.Live -> LiveScreen(onClose = { screen = Screen.Home })
                                 is Screen.Walkers -> WalkersScreen(
@@ -79,6 +88,18 @@ class MainActivity : ComponentActivity() {
                                     onBooked = { screen = Screen.Bookings },
                                 )
                                 is Screen.Bookings -> BookingsScreen(onClose = { screen = Screen.Home })
+                                is Screen.Profile -> ProfileScreen(
+                                    user = currentUser,
+                                    onClose = { screen = Screen.Home },
+                                    onBookings = { screen = Screen.Bookings },
+                                    onPets = { screen = Screen.Pets },
+                                    onLogout = { authViewModel.logout() },
+                                )
+                                is Screen.Pets -> PetsScreen(onClose = { screen = Screen.Profile })
+                                is Screen.Assistant -> AssistantScreen(
+                                    onClose = { screen = Screen.Home },
+                                    onBook = { walker -> screen = Screen.CreateBooking(walker) },
+                                )
                             }
                         }
                     }
@@ -95,4 +116,7 @@ private sealed interface Screen {
     data object Walkers : Screen
     data class CreateBooking(val walker: Walker) : Screen
     data object Bookings : Screen
+    data object Profile : Screen
+    data object Pets : Screen
+    data object Assistant : Screen
 }

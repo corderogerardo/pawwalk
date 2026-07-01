@@ -1,4 +1,3 @@
-import StripePaymentSheet
 import SwiftUI
 
 struct BookingsView: View {
@@ -9,19 +8,6 @@ struct BookingsView: View {
             content
                 .navigationTitle("Bookings")
                 .task { await model.load() }
-                .paymentSheet(
-                    isPresented: Binding(
-                        get: { model.paymentSheet != nil },
-                        set: { if !$0 { model.paymentSheet = nil } }
-                    ),
-                    paymentSheet: model.paymentSheet ?? PaymentSheet(paymentIntentClientSecret: "", configuration: .init()),
-                    onCompletion: { result in
-                        model.paymentSheet = nil
-                        if case .completed = result {
-                            Task { await model.load() }
-                        }
-                    }
-                )
         }
     }
 
@@ -46,8 +32,6 @@ struct BookingsView: View {
             List(bookings) { booking in
                 BookingRow(booking: booking) {
                     Task { await model.cancel(booking) }
-                } onPay: {
-                    Task { await model.pay(booking) }
                 }
             }
             .listStyle(.plain)
@@ -59,14 +43,9 @@ struct BookingsView: View {
 private struct BookingRow: View {
     let booking: Booking
     var onCancel: () -> Void
-    var onPay: () -> Void
 
     private var canCancel: Bool {
         booking.status == .pending || booking.status == .confirmed
-    }
-
-    private var canPay: Bool {
-        booking.status == .pending
     }
 
     var body: some View {
@@ -83,19 +62,9 @@ private struct BookingRow: View {
                 Spacer()
                 Text(booking.priceLabel).font(.mono(13, .semibold)).foregroundStyle(Brand.ink)
             }
-            if canPay || canCancel {
-                HStack(spacing: 16) {
-                    if canPay {
-                        Button(action: onPay) {
-                            Text("Pay").font(.dm(12, .semibold))
-                        }
-                        .tint(Brand.accent)
-                    }
-                    if canCancel {
-                        Button(role: .destructive, action: onCancel) {
-                            Text("Cancel").font(.dm(12, .semibold))
-                        }
-                    }
+            if canCancel {
+                Button(role: .destructive, action: onCancel) {
+                    Text("Cancel").font(.dm(12, .semibold))
                 }
                 .padding(.top, 2)
             }
