@@ -17,11 +17,6 @@ android {
         versionName = "0.1.0"
         // Where the app looks for the backend. 10.0.2.2 = host machine from the emulator.
         buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8000\"")
-        // Stripe publishable key (client-side, safe to ship). Empty = "not configured" —
-        // PaymentSheet won't be initialized until a real pk_test_... from the Stripe
-        // dashboard is set here, mirroring how the backend's PAWWALK_STRIPE_SECRET_KEY
-        // is optional server-side.
-        buildConfigField("String", "STRIPE_PUBLISHABLE_KEY", "\"\"")
     }
 
     buildTypes {
@@ -67,5 +62,5 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.okhttp.logging)
     implementation(libs.androidx.security.crypto)
-    implementation(libs.stripe.android)
+    implementation(libs.play.services.location)
 }

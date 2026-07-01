@@ -10,8 +10,8 @@ object AuthRepository {
 
     val isSignedIn: Boolean get() = TokenStore.getToken() != null
 
-    suspend fun signup(email: String, password: String, name: String): User {
-        val response = api.signup(SignupRequest(email, password, name))
+    suspend fun signup(email: String, password: String, name: String, role: String): User {
+        val response = api.signup(SignupRequest(email, password, name, role))
         TokenStore.saveToken(response.accessToken)
         return response.user
     }

@@ -20,6 +20,15 @@ docker compose up --build
 
 Then open **http://localhost:8000/docs** — FastAPI generates interactive Swagger docs from the Pydantic models. Try `POST /assistant/chat` with `{ "message": "walker in the Mission for 60 minutes tomorrow at 3pm" }`.
 
+### Demo accounts (seeded on first startup, password `PawwalkDemo1!`)
+
+| Email | Role | What you get |
+|---|---|---|
+| `demo@pawwalk.app` | owner | Pet **Mochi**, two completed walks with recorded GPS tracks (real Home stats), one upcoming pending walk |
+| `sam@pawwalk.app` / `ari@pawwalk.app` / `jo@pawwalk.app` | walker | Logins for the three public walker profiles — accept/start/complete walks and stream live GPS |
+
+Seeding is idempotent (`app/seed.py`) — it only inserts what's missing, so restarting never duplicates data.
+
 ```bash
 uv run pytest           # run the test suite
 uv run ruff check .     # lint
@@ -96,7 +105,7 @@ It works **without** an API key (a heuristic parser handles common phrasings). T
 
 ## Known gaps / next up
 
-- No Alembic migrations yet — schema changes rely on `create_all()`, which only adds new tables, never alters existing ones. Add Alembic once the schema settles (see `docs/IMPLEMENTATION-PLAN.md` B12).
+- No Alembic migrations yet — schema changes rely on `create_all()`, which only adds new tables, never alters existing ones. Add Alembic once the schema settles (see `docs/IMPLEMENTATION-PLAN.md` B12). **Until then:** after changing a column in `app/models_db.py`, delete the dev DB and restart so the schema is rebuilt — `rm apps/backend/pawwalk.db && docker compose restart backend`. (Skipping this shows up as `500 … no such column`.)
 - No rate limiting on `/auth/login` — fine for a learning project, not for anything internet-facing.
 
 ## Roadmap (see Notion board)

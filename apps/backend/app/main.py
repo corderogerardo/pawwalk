@@ -13,16 +13,16 @@ from fastapi.responses import JSONResponse
 from sqlmodel import Session
 
 from .config import settings
-from .db import engine, init_db
-from .routers import assistant, auth, bookings, payments, walkers
-from .seed import seed_walkers
+from .db import engine, run_migrations
+from .routers import assistant, auth, bookings, live, payments, pets, waitlist, walkers
+from .seed import seed_demo_data
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db()
+    run_migrations()
     with Session(engine) as session:
-        seed_walkers(session)
+        seed_demo_data(session)
     yield
 
 
@@ -40,8 +40,11 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(walkers.router)
 app.include_router(bookings.router)
+app.include_router(pets.router)
 app.include_router(payments.router)
 app.include_router(assistant.router)
+app.include_router(live.router)
+app.include_router(waitlist.router)
 
 
 # HTTPException and validation errors already return {"detail": ...} via

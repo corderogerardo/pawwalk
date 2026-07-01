@@ -1,6 +1,9 @@
 package com.pawwalk.android.ui.screens
 
+import android.Manifest
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -26,7 +29,12 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,7 +45,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -46,91 +53,106 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.pawwalk.android.ui.components.ChatIcon
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.pawwalk.android.ui.components.DmText
 import com.pawwalk.android.ui.components.ExpandIcon
 import com.pawwalk.android.ui.components.HudDot
 import com.pawwalk.android.ui.components.MonoText
-import com.pawwalk.android.ui.components.PersonIcon
-import com.pawwalk.android.ui.components.PhoneIcon
-import com.pawwalk.android.ui.components.DmText
-import com.pawwalk.android.ui.theme.JetBrainsMono
+import com.pawwalk.android.ui.components.PawIcon
 import com.pawwalk.android.ui.theme.Hud
+import com.pawwalk.android.ui.theme.JetBrainsMono
+import kotlinx.coroutines.delay
+import kotlin.math.cos
+import kotlin.math.max
+import kotlin.math.min
 
-/** PawWalk — Live GPS Tracking (hero). Dark mission-control map + telemetry HUD. */
+/** PawWalk — Live GPS Tracking (hero). The HUD is now driven by real GPS streamed
+ *  over a WebSocket (docs/FUNCTIONAL-REVIEW.md N7). No map tiles = no map cost. */
 @Composable
-fun LiveScreen(onClose: () -> Unit) {
+fun LiveScreen(
+    onClose: () -> Unit,
+    bookingId: String? = null,
+    dogName: String? = null,
+    viewModel: LiveViewModel = viewModel(),
+) {
+    val dogLabel = dogName ?: "Your dog"
     BackHandler { onClose() }
     val c = Hud.colors
     val on = c.onInverse
     val measurer = rememberTextMeasurer()
+    val state by viewModel.state.collectAsState()
+
+    val permLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { grants ->
+        if (grants.values.any { it }) viewModel.startLocationUpdates() else viewModel.onPermissionDenied()
+    }
+    LaunchedEffect(Unit) {
+        viewModel.connect(bookingId)
+        permLauncher.launch(
+            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+        )
+    }
+
+    // Wall-clock tick so the Elapsed readout advances every second.
+    var nowMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) { while (true) { nowMs = System.currentTimeMillis(); delay(1000) } }
 
     val inf = rememberInfiniteTransition(label = "live")
-    val dash by inf.animateFloat(0f, 16f,
-        infiniteRepeatable(tween(800, easing = LinearEasing), RepeatMode.Restart), label = "dash")
     val ping by inf.animateFloat(0f, 1f,
         infiniteRepeatable(tween(1800, easing = LinearEasing), RepeatMode.Restart), label = "ping")
 
     Box(Modifier.fillMaxSize().background(c.inverse)) {
         Canvas(Modifier.fillMaxSize()) {
-            val scale = maxOf(size.width / 390f, size.height / 862f)
-            val ox = (size.width - 390f * scale) / 2f
-            val oy = (size.height - 862f * scale) / 2f
-            fun p(x: Float, y: Float) = Offset(x * scale + ox, y * scale + oy)
-
-            // grid
+            // Static grid backdrop.
+            val step = size.width / 10f
             var gx = 0f
-            while (gx <= 390f) { drawLine(on.copy(alpha = 0.05f), p(gx, 0f), p(gx, 862f), 1f); gx += 39f }
+            while (gx <= size.width) { drawLine(on.copy(alpha = 0.05f), Offset(gx, 0f), Offset(gx, size.height), 1f); gx += step }
             var gy = 0f
-            while (gy <= 862f) { drawLine(on.copy(alpha = 0.05f), p(0f, gy), p(390f, gy), 1f); gy += 39f }
+            while (gy <= size.height) { drawLine(on.copy(alpha = 0.05f), Offset(0f, gy), Offset(size.width, gy), 1f); gy += step }
 
-            // faint blocks
-            fun block(x: Float, y: Float, w: Float, h: Float, col: Color) =
-                drawRoundRect(col, p(x, y), Size(w * scale, h * scale), CornerRadius(10f * scale))
-            block(196f, 332f, 150f, 120f, on.copy(alpha = 0.04f))
-            block(40f, 240f, 92f, 120f, c.signalGreen.copy(alpha = 0.06f))
-            block(150f, 500f, 120f, 80f, on.copy(alpha = 0.04f))
+            val fixes = state.fixes
+            if (fixes.isEmpty()) return@Canvas
 
-            // dashed remaining route (marching)
-            val dashed = Path().apply {
-                moveTo(p(300f, 300f).x, p(300f, 300f).y)
-                listOf(300f to 238f, 230f to 208f, 160f to 220f, 150f to 300f).forEach { lineTo(p(it.first, it.second).x, p(it.first, it.second).y) }
-            }
-            drawPath(dashed, on.copy(alpha = 0.38f), style = Stroke(
-                width = 2.5f * scale, cap = StrokeCap.Round, join = StrokeJoin.Round,
-                pathEffect = PathEffect.dashPathEffect(floatArrayOf(3f * scale, 8f * scale), -dash * scale)))
-
-            // traveled route (solid accent)
-            val route = Path().apply {
-                val pts = listOf(60f to 600f, 60f to 520f, 120f to 470f, 120f to 400f, 200f to 360f, 270f to 360f, 300f to 300f)
-                moveTo(p(pts[0].first, pts[0].second).x, p(pts[0].first, pts[0].second).y)
-                pts.drop(1).forEach { lineTo(p(it.first, it.second).x, p(it.first, it.second).y) }
-            }
-            drawPath(route, c.accent, style = Stroke(width = 3.5f * scale, cap = StrokeCap.Round, join = StrokeJoin.Round))
-
-            // start marker (square outline)
-            drawRect(on.copy(alpha = 0.7f), p(55f, 595f), Size(10f * scale, 10f * scale), style = Stroke(2f * scale))
-            // event pins
-            drawCircle(c.pinBlue, 4f * scale, p(120f, 470f))
-            drawCircle(c.pinAmber, 4f * scale, p(200f, 360f))
-            // home end ring
-            drawCircle(on.copy(alpha = 0.55f), 5f * scale, p(150f, 300f), style = Stroke(2f * scale))
-
-            // current position — pulsing ping
-            val cp = p(300f, 300f)
-            drawCircle(c.accent.copy(alpha = 0.45f * (1f - ping)), (12f + 22f * ping) * scale, cp)
-            drawCircle(c.accent, 8f * scale, cp)
-            drawCircle(on, 8f * scale, cp, style = Stroke(2.5f * scale))
-
-            // "MOCHI · HERE" label
-            val lblTL = p(247f, 315f)
-            drawRoundRect(c.inverse.copy(alpha = 0.82f), lblTL, Size(106f * scale, 19f * scale), CornerRadius(5f * scale))
-            drawRoundRect(on.copy(alpha = 0.18f), lblTL, Size(106f * scale, 19f * scale), CornerRadius(5f * scale), style = Stroke(1f))
-            val layout = measurer.measure(
-                "MOCHI · HERE",
-                style = TextStyle(fontFamily = JetBrainsMono, fontSize = (9f * scale).toSp(), color = on)
+            // Equirectangular projection (equal aspect), centered in a padded rect.
+            val midLat = (fixes.minOf { it.lat } + fixes.maxOf { it.lat }) / 2
+            val cosLat = cos(Math.toRadians(midLat))
+            fun projX(f: LiveViewModel.Fix) = f.lng * cosLat
+            fun projY(f: LiveViewModel.Fix) = f.lat
+            val minX = fixes.minOf { projX(it) }; val maxX = fixes.maxOf { projX(it) }
+            val minY = fixes.minOf { projY(it) }; val maxY = fixes.maxOf { projY(it) }
+            val spanX = max(maxX - minX, 1e-12); val spanY = max(maxY - minY, 1e-12)
+            val rect = Rect(60f, 200f, size.width - 60f, size.height - 220f)
+            val sc = min(rect.width / spanX, rect.height / spanY)
+            val cx = (minX + maxX) / 2; val cy = (minY + maxY) / 2
+            fun screen(f: LiveViewModel.Fix) = Offset(
+                (rect.center.x + (projX(f) - cx) * sc).toFloat(),
+                (rect.center.y - (projY(f) - cy) * sc).toFloat(),
             )
-            drawText(layout, topLeft = Offset(lblTL.x + 9f * scale, lblTL.y + (19f * scale - layout.size.height) / 2f))
+            val pts = fixes.map { screen(it) }
+
+            if (pts.size > 1) {
+                val route = Path().apply {
+                    moveTo(pts[0].x, pts[0].y)
+                    pts.drop(1).forEach { lineTo(it.x, it.y) }
+                }
+                drawPath(route, c.accent, style = Stroke(width = 3.5f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+            }
+            pts.firstOrNull()?.let { drawRect(on.copy(alpha = 0.7f), Offset(it.x - 5f, it.y - 5f), Size(10f, 10f), style = Stroke(2f)) }
+
+            val cp = pts.last()
+            drawCircle(c.accent.copy(alpha = 0.45f * (1f - ping)), 12f + 22f * ping, cp)
+            drawCircle(c.accent, 8f, cp)
+            drawCircle(on, 8f, cp, style = Stroke(2.5f))
+
+            // "<DOG> · HERE" label, sized to the dog's actual name.
+            val layout = measurer.measure("${dogLabel.uppercase()} · HERE",
+                style = TextStyle(fontFamily = JetBrainsMono, fontSize = 9f.toSp(), color = on))
+            val lblTL = Offset(cp.x + 12f, cp.y - 9f)
+            val lblSize = Size(layout.size.width + 18f, 19f)
+            drawRoundRect(c.inverse.copy(alpha = 0.82f), lblTL, lblSize, CornerRadius(5f))
+            drawRoundRect(on.copy(alpha = 0.18f), lblTL, lblSize, CornerRadius(5f), style = Stroke(1f))
+            drawText(layout, topLeft = Offset(lblTL.x + 9f, lblTL.y + (19f - layout.size.height) / 2f))
         }
 
         // scrims
@@ -145,24 +167,31 @@ fun LiveScreen(onClose: () -> Unit) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 HudDot(c.accent)
                 Spacer(Modifier.width(7.dp))
-                MonoText("Live · Walk in progress", on)
+                MonoText(if (state.phase == LiveViewModel.Phase.TRACKING) "Live · Walk in progress" else "Live · Connecting", on)
                 Spacer(Modifier.weight(1f))
+                if (state.phase != LiveViewModel.Phase.NO_BOOKING) {
+                    Box(
+                        Modifier.clip(RoundedCornerShape(50)).border(1.dp, on.copy(alpha = 0.3f), RoundedCornerShape(50))
+                            .clickable { viewModel.simulate() }.padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) { MonoText("▶ Demo", on, sizeSp = 9f, trackingEm = 0.06f, upper = false) }
+                    Spacer(Modifier.width(10.dp))
+                }
                 Box(Modifier.clickable { onClose() }) { ExpandIcon(on.copy(alpha = 0.55f), 13.dp) }
             }
             Row(Modifier.padding(top = 18.dp), verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.spacedBy(18.dp)) {
                 Column {
                     MonoText("Elapsed", on.copy(alpha = 0.5f), sizeSp = 9f)
-                    MonoText("18:42", on, sizeSp = 34f, weight = FontWeight.Normal, trackingEm = -0.03f,
-                        upper = false, modifier = Modifier.padding(top = 3.dp))
+                    MonoText(elapsedLabel(state.startedAtMs, nowMs), on, sizeSp = 34f, weight = FontWeight.Normal,
+                        trackingEm = -0.03f, upper = false, modifier = Modifier.padding(top = 3.dp))
                 }
                 Column(Modifier.padding(bottom = 3.dp)) {
                     MonoText("Distance", on.copy(alpha = 0.5f), sizeSp = 9f)
-                    DmText("2.4 km", on, sizeSp = 18f, weight = FontWeight.SemiBold, modifier = Modifier.padding(top = 5.dp))
+                    DmText(distanceLabel(state.fixes), on, sizeSp = 18f, weight = FontWeight.SemiBold, modifier = Modifier.padding(top = 5.dp))
                 }
                 Column(Modifier.padding(bottom = 3.dp)) {
                     MonoText("Pace", on.copy(alpha = 0.5f), sizeSp = 9f)
-                    DmText("12′/km", on, sizeSp = 18f, weight = FontWeight.SemiBold, modifier = Modifier.padding(top = 5.dp))
+                    DmText(paceLabel(state.fixes, state.startedAtMs, nowMs), on, sizeSp = 18f, weight = FontWeight.SemiBold, modifier = Modifier.padding(top = 5.dp))
                 }
             }
         }
@@ -170,11 +199,13 @@ fun LiveScreen(onClose: () -> Unit) {
         // bottom HUD
         Column(Modifier.align(Alignment.BottomStart).navigationBarsPadding().fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 16.dp)) {
-            EventRow(on, "16:28", c.pinAmber, "Sniff stop · 0:48")
-            Spacer(Modifier.height(6.dp))
-            EventRow(on, "16:24", c.pinBlue, "Pee break logged")
-            Spacer(Modifier.height(11.dp))
-            // walker control card
+            statusMessage(state)?.let { msg ->
+                Row(Modifier.clip(RoundedCornerShape(50)).background(c.inverse2.copy(alpha = 0.7f))
+                    .padding(horizontal = 12.dp, vertical = 8.dp)) {
+                    MonoText(msg, on.copy(alpha = 0.85f), sizeSp = 10f, weight = FontWeight.Normal, upper = false)
+                }
+                Spacer(Modifier.height(11.dp))
+            }
             Row(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp))
                     .background(Color(0xFF2A3440).copy(alpha = 0.85f))
@@ -184,35 +215,43 @@ fun LiveScreen(onClose: () -> Unit) {
             ) {
                 Box(Modifier.size(40.dp).clip(RoundedCornerShape(50)).background(c.inverse2)
                     .border(1.dp, on.copy(alpha = 0.22f), RoundedCornerShape(50)), Alignment.Center) {
-                    PersonIcon(on.copy(alpha = 0.5f), 16.dp)
+                    PawIcon(on.copy(alpha = 0.5f), 16.dp)
                 }
                 Spacer(Modifier.width(11.dp))
                 Column(Modifier.weight(1f)) {
-                    DmText("Elena Vega", on, sizeSp = 14f, weight = FontWeight.SemiBold)
-                    MonoText("Unit 07 · walking now", on.copy(alpha = 0.6f), sizeSp = 9f,
+                    DmText(dogLabel, on, sizeSp = 14f, weight = FontWeight.SemiBold)
+                    MonoText("${state.fixes.size} fixes · live", on.copy(alpha = 0.6f), sizeSp = 9f,
                         weight = FontWeight.Normal, trackingEm = 0.07f)
-                }
-                Box(Modifier.size(42.dp).clip(RoundedCornerShape(13.dp))
-                    .border(1.dp, on.copy(alpha = 0.18f), RoundedCornerShape(13.dp)), Alignment.Center) {
-                    ChatIcon(on, 15.dp)
-                }
-                Spacer(Modifier.width(8.dp))
-                Box(Modifier.size(42.dp).clip(RoundedCornerShape(13.dp)).background(c.signalGreen), Alignment.Center) {
-                    PhoneIcon(on, 15.dp)
                 }
             }
         }
     }
 }
 
-@Composable
-private fun EventRow(on: Color, time: String, dot: Color, text: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        MonoText(time, on.copy(alpha = 0.45f), sizeSp = 9f, weight = FontWeight.Normal, upper = false,
-            modifier = Modifier.width(38.dp))
-        Spacer(Modifier.width(9.dp))
-        Box(Modifier.size(5.dp).clip(RoundedCornerShape(50)).background(dot))
-        Spacer(Modifier.width(9.dp))
-        MonoText(text, on.copy(alpha = 0.8f), sizeSp = 9.5f, weight = FontWeight.Normal, trackingEm = 0.06f)
-    }
+private fun elapsedLabel(startedAtMs: Long?, nowMs: Long): String {
+    if (startedAtMs == null) return "00:00"
+    val s = ((nowMs - startedAtMs) / 1000).coerceAtLeast(0)
+    return "%02d:%02d".format(s / 60, s % 60)
+}
+
+private fun distanceLabel(fixes: List<LiveViewModel.Fix>): String {
+    val m = LiveViewModel.distanceMeters(fixes)
+    return if (m < 1000) "${m.toInt()} m" else "%.2f km".format(m / 1000)
+}
+
+private fun paceLabel(fixes: List<LiveViewModel.Fix>, startedAtMs: Long?, nowMs: Long): String {
+    val m = LiveViewModel.distanceMeters(fixes)
+    if (startedAtMs == null || m <= 20) return "—"
+    val minutes = (nowMs - startedAtMs) / 60000.0
+    val pace = minutes / (m / 1000.0)
+    if (!pace.isFinite() || pace >= 99) return "—"
+    return "%d′%02d″/km".format(pace.toInt(), ((pace - pace.toInt()) * 60).toInt())
+}
+
+private fun statusMessage(state: LiveViewModel.State): String? = when (state.phase) {
+    LiveViewModel.Phase.NO_BOOKING -> "No active walk to track — book one first."
+    LiveViewModel.Phase.DENIED -> "Location access is off. Enable it in Settings to track."
+    LiveViewModel.Phase.FAILED -> "Lost connection to the tracker."
+    LiveViewModel.Phase.CONNECTING -> if (state.fixes.isEmpty()) "Acquiring GPS…" else null
+    LiveViewModel.Phase.TRACKING -> if (state.fixes.isEmpty()) "Waiting for the first fix…" else null
 }

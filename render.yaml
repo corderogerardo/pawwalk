@@ -1,0 +1,24 @@
+# Render Blueprint — deploys the PawWalk API as a free Docker web service.
+# In Render: New → Blueprint → pick this repo. Then set the two `sync: false`
+# secrets in the dashboard (see docs/DEPLOY.md). WebSockets (live tracking) work
+# on Render's free plan; the service sleeps after ~15 min idle (cold start ~1 min).
+services:
+  - type: web
+    name: pawwalk-api
+    runtime: docker
+    rootDir: apps/backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      # Auth signing key — Render generates a strong random value once.
+      - key: PAWWALK_JWT_SECRET
+        generateValue: true
+      # Paste your Neon connection string here in the dashboard (see DEPLOY.md).
+      # Must be the SQLAlchemy form: postgresql+psycopg://USER:PASS@HOST/DB?sslmode=require
+      - key: PAWWALK_DATABASE_URL
+        sync: false
+      # Optional: comma-separated browser origins for the landing page. Native
+      # iOS/Android don't send Origin, so they work without this.
+      - key: PAWWALK_CORS_ORIGINS
+        sync: false

@@ -2,14 +2,25 @@
 
 import { useState } from "react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
 export function Waitlist() {
   const [email, setEmail] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">("idle");
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // Phase 2: POST this to the backend (/waitlist). For now, just confirm locally.
-    if (email.includes("@")) setSubmitted(true);
+    setStatus("sending");
+    try {
+      const res = await fetch(`${API_URL}/waitlist`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      setStatus(res.ok ? "done" : "error");
+    } catch {
+      setStatus("error");
+    }
   }
 
   return (
@@ -19,7 +30,7 @@ export function Waitlist() {
         <p className="mt-4 text-stone-300">
           Join the waitlist and get a free first walk when we launch in your neighborhood.
         </p>
-        {submitted ? (
+        {status === "done" ? (
           <p className="mt-8 rounded-xl bg-brand-600/20 px-6 py-4 text-brand-200">
             🎉 You&apos;re on the list! We&apos;ll be in touch soon.
           </p>
@@ -35,11 +46,17 @@ export function Waitlist() {
             />
             <button
               type="submit"
-              className="rounded-full bg-brand-600 px-7 py-3 font-semibold text-white transition hover:bg-brand-700"
+              disabled={status === "sending"}
+              className="rounded-full bg-brand-600 px-7 py-3 font-semibold text-white transition hover:bg-brand-700 disabled:opacity-60"
             >
-              Join waitlist
+              {status === "sending" ? "Joining…" : "Join waitlist"}
             </button>
           </form>
+        )}
+        {status === "error" && (
+          <p className="mt-4 text-sm text-red-300">
+            Something went wrong — please try again in a moment.
+          </p>
         )}
       </div>
     </section>

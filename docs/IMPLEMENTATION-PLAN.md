@@ -4,6 +4,13 @@ A task-by-task checklist sized for one Sonnet 5 agent per task. Each task lists
 the **files** it touches, **what to do**, and a **check** (the smallest thing
 that proves it works). Hand an agent one task at a time, in order.
 
+> **Status (2026-07-01):** the checkboxes below are **stale** — Slices 0–3 are
+> largely shipped and were verified against the Docker backend on 2026-07-01.
+> See **[docs/FUNCTIONAL-REVIEW.md](FUNCTIONAL-REVIEW.md)** for the screen-by-screen
+> results, the P0 bug that was found + fixed (stale DB missing `bookings.user_id`,
+> because migrations B12 aren't done), and new to-dos **N1–N9** (profile screen,
+> real Home data, persistent nav, real Stripe, assistant screen, live-tracking data).
+
 ## Recommended sequencing — vertical slices, backend-first within each slice
 
 You asked whether to do all-backend-first or interleave backend↔frontend.

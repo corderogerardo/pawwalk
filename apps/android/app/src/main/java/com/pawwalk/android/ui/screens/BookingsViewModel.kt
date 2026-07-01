@@ -43,8 +43,4 @@ class BookingsViewModel : ViewModel() {
             }
         }
     }
-
-    /** Fetches a PaymentIntent client secret for the given booking, to hand to PaymentSheet. */
-    suspend fun fetchPaymentClientSecret(bookingId: String): String =
-        BookingRepository.createPaymentIntent(bookingId).clientSecret
 }

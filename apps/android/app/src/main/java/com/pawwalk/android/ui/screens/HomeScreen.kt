@@ -22,6 +22,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,6 +33,10 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.pawwalk.android.data.Booking
+import com.pawwalk.android.data.User
+import com.pawwalk.android.data.Walker
 import com.pawwalk.android.ui.components.ChatIcon
 import com.pawwalk.android.ui.components.CheckIcon
 import com.pawwalk.android.ui.components.CalendarIcon
@@ -39,16 +45,30 @@ import com.pawwalk.android.ui.components.DmText
 import com.pawwalk.android.ui.components.HomeIcon
 import com.pawwalk.android.ui.components.HudDot
 import com.pawwalk.android.ui.components.LocationArrowIcon
-import com.pawwalk.android.ui.components.LogoutIcon
 import com.pawwalk.android.ui.components.MonoText
 import com.pawwalk.android.ui.components.PawIcon
 import com.pawwalk.android.ui.components.PersonIcon
 import com.pawwalk.android.ui.theme.BrandColors
 import com.pawwalk.android.ui.theme.Hud
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+
+private val TIME_FMT = DateTimeFormatter.ofPattern("h:mm a").withZone(ZoneId.systemDefault())
+private val DAY_FMT = DateTimeFormatter.ofPattern("EEE MMM d").withZone(ZoneId.systemDefault())
 
 @Composable
-fun HomeScreen(onTrack: () -> Unit, onBook: () -> Unit = {}, onLogout: () -> Unit = {}) {
+fun HomeScreen(
+    user: User?,
+    onTrack: (dogName: String?) -> Unit,
+    onBook: () -> Unit = {},
+    onProfile: () -> Unit = {},
+    onAssistant: () -> Unit = {},
+    onViewBookings: () -> Unit = {},
+    viewModel: HomeViewModel = viewModel(),
+) {
     val c = Hud.colors
+    val state by viewModel.state.collectAsState()
     Box(Modifier.fillMaxSize().background(c.canvas)) {
         Column(
             Modifier
@@ -59,45 +79,55 @@ fun HomeScreen(onTrack: () -> Unit, onBook: () -> Unit = {}, onLogout: () -> Uni
                 .padding(top = 10.dp, bottom = 104.dp),
             verticalArrangement = Arrangement.spacedBy(13.dp),
         ) {
-            StatusRow(c, onLogout)
-            DogHeader(c)
+            StatusRow(c)
+            DogHeader(c, user, state.pets.firstOrNull())
             Box(Modifier.fillMaxWidth().height(1.dp).background(c.ink.copy(alpha = 0.12f)))
-            NextWalkCard(c, onTrack)
-            StatsRow(c)
-            RecentWalks(c)
+            val up = state.upcoming
+            if (up != null) NextWalkCard(c, up.booking, up.walker, { onTrack(up.booking.dogName) }, onAssistant)
+            else EmptyWalkCard(c, onBook, onAssistant)
+            StatsRow(c, state.weekCount, state.stats)
+            RecentWalks(c, state.stats?.recentWalks ?: emptyList(), onViewBookings)
         }
         HudTabBar(
-            c, onTrack, onBook,
+            c, { onTrack(state.upcoming?.booking?.dogName ?: state.pets.firstOrNull()?.name) },
+            onBook, onProfile,
             Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(16.dp)
         )
     }
 }
 
 @Composable
-private fun StatusRow(c: BrandColors, onLogout: () -> Unit) {
+private fun StatusRow(c: BrandColors) {
+    // The device's real UTC offset (the design's "UTC−7" chip, minus the fake latitude).
+    val offsetHours = ZoneId.systemDefault().rules.getOffset(Instant.now()).totalSeconds / 3600
+    val utcLabel = when {
+        offsetHours > 0 -> "UTC+$offsetHours"
+        offsetHours < 0 -> "UTC−${-offsetHours}"
+        else -> "UTC"
+    }
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         HudDot(c.signalGreen)
         Spacer(Modifier.width(7.dp))
         MonoText("Tracking ready", c.ink.copy(alpha = 0.6f))
         Spacer(Modifier.weight(1f))
-        MonoText("37.77°N · UTC−7", c.ink.copy(alpha = 0.38f), sizeSp = 9f, weight = FontWeight.Normal,
+        MonoText(utcLabel, c.ink.copy(alpha = 0.38f), sizeSp = 9f, weight = FontWeight.Normal,
             trackingEm = 0.08f, upper = false)
-        Spacer(Modifier.width(12.dp))
-        Box(Modifier.clickable { onLogout() }) { LogoutIcon(c.ink.copy(alpha = 0.45f), size = 14.dp) }
     }
 }
 
 @Composable
-private fun DogHeader(c: BrandColors) {
+private fun DogHeader(c: BrandColors, user: User?, pet: com.pawwalk.android.data.Pet?) {
     Row(Modifier.fillMaxWidth()) {
         Column(Modifier.weight(1f)) {
             MonoText("Dog · 001", c.accent)
-            DmText("Mochi.", c.ink, sizeSp = 40f, weight = FontWeight.Medium, trackingEm = -0.04f,
-                modifier = Modifier.padding(top = 7.dp))
-            DmText("Shiba Inu · 3 yrs · 9.4 kg", c.ink, sizeSp = 13.5f, weight = FontWeight.Medium,
-                modifier = Modifier.padding(top = 9.dp))
-            MonoText("@ Sunset District", c.ink.copy(alpha = 0.6f), sizeSp = 10f, weight = FontWeight.Normal,
-                trackingEm = 0.1f, modifier = Modifier.padding(top = 3.dp))
+            DmText(pet?.let { "${it.name}." } ?: "No pet yet.", c.ink, sizeSp = 40f, weight = FontWeight.Medium,
+                trackingEm = -0.04f, modifier = Modifier.padding(top = 7.dp))
+            DmText(pet?.subtitle?.ifEmpty { null } ?: "Add a pet in your profile", c.ink.copy(alpha = if (pet == null) 0.5f else 1f),
+                sizeSp = 13.5f, weight = FontWeight.Medium, modifier = Modifier.padding(top = 9.dp))
+            if (user != null) {
+                MonoText("Owner · ${user.name}", c.ink.copy(alpha = 0.6f), sizeSp = 10f, weight = FontWeight.Normal,
+                    trackingEm = 0.1f, modifier = Modifier.padding(top = 3.dp))
+            }
         }
         PawBadge(c)
     }
@@ -113,14 +143,24 @@ private fun PawBadge(c: BrandColors) {
 }
 
 @Composable
-private fun NextWalkCard(c: BrandColors, onTrack: () -> Unit) {
+private fun NextWalkCard(c: BrandColors, booking: Booking, walker: Walker?, onTrack: () -> Unit, onChat: () -> Unit) {
     val on = c.onInverse
+    val start = runCatching { Instant.parse(booking.startTime) }.getOrNull()
+    val startLabel = start?.let { TIME_FMT.format(it) } ?: "—"
+    val endLabel = start?.let { TIME_FMT.format(it.plusSeconds(booking.durationMinutes * 60L)) } ?: "—"
+    val dayLabel = start?.let { DAY_FMT.format(it) } ?: ""
+    val walkerName = walker?.name ?: "Your walker"
+    val walkerMeta = listOfNotNull(
+        walker?.let { "★ %.1f".format(it.rating) },
+        walker?.neighborhoods?.take(2)?.joinToString(", "),
+    ).filter { it.isNotBlank() }.joinToString(" · ")
+
     Column(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(c.inverse)
             .padding(horizontal = 18.dp, vertical = 17.dp)
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            MonoText("Next walk · Today", on.copy(alpha = 0.6f))
+            MonoText("Next walk", on.copy(alpha = 0.6f))
             Spacer(Modifier.weight(1f))
             Row(
                 Modifier.border(1.dp, on.copy(alpha = 0.22f), RoundedCornerShape(50))
@@ -129,17 +169,17 @@ private fun NextWalkCard(c: BrandColors, onTrack: () -> Unit) {
             ) {
                 Box(Modifier.size(5.dp).background(c.accent, RoundedCornerShape(50)))
                 Spacer(Modifier.width(6.dp))
-                MonoText("ETA 00:26", on, sizeSp = 9.5f, weight = FontWeight.Normal, trackingEm = 0.08f)
+                MonoText(dayLabel, on, sizeSp = 9.5f, weight = FontWeight.Normal, trackingEm = 0.08f, upper = false)
             }
         }
         Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(top = 13.dp)) {
-            DmText("16:30", on, sizeSp = 38f, weight = FontWeight.Medium, trackingEm = -0.04f)
+            DmText(startLabel, on, sizeSp = 34f, weight = FontWeight.Medium, trackingEm = -0.04f)
             Spacer(Modifier.width(10.dp))
-            MonoText("→ 17:15", on.copy(alpha = 0.55f), sizeSp = 11f, weight = FontWeight.Normal,
+            MonoText("→ $endLabel", on.copy(alpha = 0.55f), sizeSp = 11f, weight = FontWeight.Normal,
                 upper = false, modifier = Modifier.padding(bottom = 4.dp))
         }
-        MonoText("45 min · Neighborhood loop · 2.4 km", on.copy(alpha = 0.72f), sizeSp = 10f,
-            weight = FontWeight.Normal, trackingEm = 0.09f, modifier = Modifier.padding(top = 6.dp))
+        MonoText("${booking.durationMinutes} min · ${booking.dogName}", on.copy(alpha = 0.72f), sizeSp = 10f,
+            weight = FontWeight.Normal, trackingEm = 0.09f, upper = false, modifier = Modifier.padding(top = 6.dp))
 
         Spacer(Modifier.height(14.dp))
         Box(Modifier.fillMaxWidth().height(1.dp).background(on.copy(alpha = 0.14f)))
@@ -152,9 +192,9 @@ private fun NextWalkCard(c: BrandColors, onTrack: () -> Unit) {
             }
             Spacer(Modifier.width(11.dp))
             Column(Modifier.weight(1f)) {
-                DmText("Elena Vega", on, sizeSp = 14f, weight = FontWeight.SemiBold)
-                MonoText("Unit 07 · ★ 4.9 · 312 walks", on.copy(alpha = 0.6f), sizeSp = 9f,
-                    weight = FontWeight.Normal, trackingEm = 0.07f)
+                DmText(walkerName, on, sizeSp = 14f, weight = FontWeight.SemiBold)
+                MonoText(walkerMeta, on.copy(alpha = 0.6f), sizeSp = 9f,
+                    weight = FontWeight.Normal, trackingEm = 0.07f, upper = false)
             }
             Row(
                 Modifier.clip(RoundedCornerShape(50)).background(c.signalGreen.copy(alpha = 0.18f))
@@ -180,7 +220,8 @@ private fun NextWalkCard(c: BrandColors, onTrack: () -> Unit) {
             }
             Box(
                 Modifier.size(46.dp, 42.dp).clip(RoundedCornerShape(12.dp))
-                    .border(1.dp, on.copy(alpha = 0.22f), RoundedCornerShape(12.dp)),
+                    .border(1.dp, on.copy(alpha = 0.22f), RoundedCornerShape(12.dp))
+                    .clickable { onChat() },
                 Alignment.Center
             ) { ChatIcon(on, size = 14.dp) }
         }
@@ -188,11 +229,47 @@ private fun NextWalkCard(c: BrandColors, onTrack: () -> Unit) {
 }
 
 @Composable
-private fun StatsRow(c: BrandColors) {
+private fun EmptyWalkCard(c: BrandColors, onBook: () -> Unit, onChat: () -> Unit) {
+    val on = c.onInverse
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(c.inverse)
+            .padding(horizontal = 18.dp, vertical = 17.dp)
+    ) {
+        MonoText("Next walk", on.copy(alpha = 0.6f))
+        DmText("No walks booked", on, sizeSp = 26f, weight = FontWeight.Medium, trackingEm = -0.03f,
+            modifier = Modifier.padding(top = 10.dp))
+        MonoText("Book a walker and your next walk shows up here.", on.copy(alpha = 0.66f), sizeSp = 10f,
+            weight = FontWeight.Normal, trackingEm = 0.06f, upper = false, modifier = Modifier.padding(top = 6.dp))
+        Row(Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                Modifier.weight(1f).height(42.dp).clip(RoundedCornerShape(12.dp))
+                    .background(c.accent).clickable { onBook() },
+                horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically
+            ) {
+                CalendarIcon(on, size = 12.dp)
+                Spacer(Modifier.width(7.dp))
+                DmText("Book a walk", on, sizeSp = 13f, weight = FontWeight.SemiBold)
+            }
+            Box(
+                Modifier.size(46.dp, 42.dp).clip(RoundedCornerShape(12.dp))
+                    .border(1.dp, on.copy(alpha = 0.22f), RoundedCornerShape(12.dp))
+                    .clickable { onChat() },
+                Alignment.Center
+            ) { ChatIcon(on, size = 14.dp) }
+        }
+    }
+}
+
+@Composable
+private fun StatsRow(c: BrandColors, weekCount: Int, stats: com.pawwalk.android.data.OwnerStats?) {
+    val distanceKm = stats?.distanceKm ?: 0.0
+    val streakDays = stats?.streakDays ?: 0
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-        StatTile(c, "This week", "04", "walks", 0.66f, Modifier.weight(1f))
-        StatTile(c, "Distance", "12.3", "km", 0.82f, Modifier.weight(1f))
-        StatTile(c, "Streak", "09", "days", 0.75f, Modifier.weight(1f), accent = true)
+        StatTile(c, "This week", "%02d".format(weekCount), "walks", (weekCount / 5f).coerceAtMost(1f), Modifier.weight(1f))
+        StatTile(c, "Distance", "%.1f".format(distanceKm), "km",
+            (distanceKm / 20f).toFloat().coerceAtMost(1f), Modifier.weight(1f))
+        StatTile(c, "Streak", "%02d".format(streakDays), "days",
+            (streakDays / 12f).coerceAtMost(1f), Modifier.weight(1f), accent = true)
     }
 }
 
@@ -225,18 +302,43 @@ private fun StatTile(
     }
 }
 
+private val WEEKDAY_FMT = DateTimeFormatter.ofPattern("EEE").withZone(ZoneId.systemDefault())
+
 @Composable
-private fun RecentWalks(c: BrandColors) {
+private fun RecentWalks(
+    c: BrandColors,
+    walks: List<com.pawwalk.android.data.RecentWalk>,
+    onViewAll: () -> Unit,
+) {
     Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().padding(bottom = 2.dp), verticalAlignment = Alignment.CenterVertically) {
             MonoText("§ Recent walks", c.ink.copy(alpha = 0.6f), trackingEm = 0.1f)
             Spacer(Modifier.weight(1f))
-            MonoText("View all", c.accent, sizeSp = 9f, weight = FontWeight.Normal, trackingEm = 0.08f)
+            MonoText("View all", c.accent, sizeSp = 9f, weight = FontWeight.Normal, trackingEm = 0.08f,
+                modifier = Modifier.clickable { onViewAll() })
         }
-        RecentWalkRow(c, listOf(22f, 11f, 16f, 6f, 13f, 5f), "Riverside loop", "Sat · 45 min · 2.6 km · Elena V.")
-        RecentWalkRow(c, listOf(8f, 18f, 10f, 20f, 9f, 15f), "Dunes & pier", "Thu · 30 min · 1.8 km · Marcus T.")
+        if (walks.isEmpty()) {
+            Box(Modifier.fillMaxWidth().height(1.dp).background(c.ink.copy(alpha = 0.12f)))
+            MonoText("Completed walks show up here.", c.ink.copy(alpha = 0.45f), sizeSp = 10f,
+                weight = FontWeight.Normal, trackingEm = 0.06f, upper = false,
+                modifier = Modifier.padding(vertical = 14.dp))
+        } else {
+            walks.forEach { walk ->
+                val day = runCatching { WEEKDAY_FMT.format(Instant.parse(walk.startTime)) }.getOrDefault("—")
+                RecentWalkRow(
+                    c,
+                    sparklinePoints(walk.sparkline),
+                    "${walk.dogName} with ${walk.walkerName}",
+                    "$day · ${walk.durationMinutes} min · ${"%.1f".format(walk.distanceKm)} km",
+                )
+            }
+        }
     }
 }
+
+/** Server sparkline values (0..1, per-segment distance) → the row's 0..28 viewbox. */
+private fun sparklinePoints(values: List<Double>): List<Float> =
+    if (values.size < 2) List(6) { 14f } else values.map { 23f - it.toFloat() * 18f }
 
 @Composable
 private fun RecentWalkRow(c: BrandColors, points: List<Float>, title: String, meta: String) {
@@ -271,7 +373,9 @@ private fun Sparkline(c: BrandColors, points: List<Float>, modifier: Modifier) {
 }
 
 @Composable
-private fun HudTabBar(c: BrandColors, onTrack: () -> Unit, onBook: () -> Unit, modifier: Modifier = Modifier) {
+private fun HudTabBar(
+    c: BrandColors, onTrack: () -> Unit, onBook: () -> Unit, onProfile: () -> Unit, modifier: Modifier = Modifier,
+) {
     val on = c.onInverse
     Row(
         modifier.clip(RoundedCornerShape(50)).background(c.inverse).padding(6.dp),
@@ -280,7 +384,7 @@ private fun HudTabBar(c: BrandColors, onTrack: () -> Unit, onBook: () -> Unit, m
         Tab("Home", active = true) { HomeIcon(on, 15.dp) }
         Tab("Book", onClick = onBook) { CalendarIcon(on.copy(alpha = 0.6f), 15.dp) }
         Tab("Track", onClick = onTrack) { LocationArrowIcon(on.copy(alpha = 0.6f), 15.dp) }
-        Tab("Mochi") { PawIcon(on.copy(alpha = 0.6f), 15.dp) }
+        Tab("Profile", onClick = onProfile) { PawIcon(on.copy(alpha = 0.6f), 15.dp) }
     }
 }
 

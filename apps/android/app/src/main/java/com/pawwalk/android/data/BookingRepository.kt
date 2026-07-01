@@ -14,6 +14,10 @@ object BookingRepository {
 
     suspend fun cancelBooking(bookingId: String): Booking = api.cancelBooking(bookingId)
 
-    suspend fun createPaymentIntent(bookingId: String): PaymentIntentResponse =
-        api.createPaymentIntent(PaymentIntentRequest(bookingId))
+    suspend fun simulateWalk(bookingId: String) = api.simulateWalk(bookingId)
+
+    suspend fun assignedBookings(): List<Booking> = api.assignedBookings()
+
+    /** action ∈ accept | decline | start | complete */
+    suspend fun transition(bookingId: String, action: String): Booking = api.transitionBooking(bookingId, action)
 }
