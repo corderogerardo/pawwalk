@@ -45,7 +45,7 @@ class HomeViewModel : ViewModel() {
             val stats = runCatching { Network.api.ownerStats() }.getOrNull()
             val now = Instant.now()
             val future = bookings
-                .filter { it.status != "cancelled" }
+                .filter { it.isActive }
                 .mapNotNull { b -> runCatching { Instant.parse(b.startTime) }.getOrNull()?.let { b to it } }
                 .filter { (_, start) -> !start.isBefore(now) }
                 .sortedBy { (_, start) -> start }

@@ -27,7 +27,7 @@ final class HomeViewModel {
 
         let now = Date()
         let future = bookings
-            .filter { $0.status != .cancelled && $0.startTime >= now }
+            .filter { $0.status.isActive && $0.startTime >= now }
             .sorted { $0.startTime < $1.startTime }
 
         upcoming = future.first.map { ($0, byID[$0.walkerID]) }

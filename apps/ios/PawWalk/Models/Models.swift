@@ -128,6 +128,9 @@ struct CreateBookingRequest: Codable {
 
 enum BookingStatus: String, Codable {
     case pending, confirmed, inProgress = "in_progress", completed, cancelled
+
+    /// Walk hasn't happened yet or is happening now (excludes completed and cancelled).
+    var isActive: Bool { self == .pending || self == .confirmed || self == .inProgress }
 }
 
 struct Booking: Codable, Identifiable, Hashable {

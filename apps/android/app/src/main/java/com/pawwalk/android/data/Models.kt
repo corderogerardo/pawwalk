@@ -37,7 +37,10 @@ data class Booking(
     val status: String,
     @SerialName("price_cents") val priceCents: Int,
     @SerialName("created_at") val createdAt: String,
-)
+) {
+    /** Walk hasn't happened yet or is happening now (excludes completed and cancelled). */
+    val isActive: Boolean get() = status == "pending" || status == "confirmed" || status == "in_progress"
+}
 
 @Serializable
 data class User(
