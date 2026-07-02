@@ -36,6 +36,11 @@ Goal: get all four apps running and understand how they connect.
 
 When all four show the same three walkers, you've got the full loop working. That's the foundation everything else builds on.
 
+> **New: the interactive course.** [`apps/learn`](../apps/learn) is PawWalk Academy — a step-by-step
+> website (13 modules, 52 lessons) that teaches Swift/SwiftUI from zero by rebuilding the iOS app,
+> with type-the-code exercises checked in the browser. Run it with
+> `cd apps/learn && python3 -m http.server 4173`. It supersedes the iOS track below for beginners.
+
 ## The three tracks
 
 - **[iOS / SwiftUI](learning/ios.md)** — Swift language basics → SwiftUI views → state → networking → the Apple frameworks (MapKit, StoreKit, Sign in with Apple).
