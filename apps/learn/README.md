@@ -4,6 +4,10 @@ An interactive, step-by-step course that teaches Swift, SwiftUI, and iOS develop
 from absolute zero by rebuilding the PawWalk app in `apps/ios` — typing the real code,
 lesson by lesson, with in-browser checking.
 
+**Part II (modules 13+)** teaches the Python backend the same way: Python → Flask →
+Django → FastAPI (the real `apps/backend`) → LLM agents → RAG. Build plan and per-module
+tasks: [`docs/learning/python-academy-plan.md`](../../docs/learning/python-academy-plan.md).
+
 ## Run it
 
 No build step, no dependencies:

@@ -17,20 +17,25 @@ const errors = [];
 const err = (file, msg) => errors.push(`${file}: ${msg}`);
 
 // Keep in sync with normalize() in app.js
-function normalize(code) {
+function normalize(code, lang) {
+  code = lang === "python"
+    ? code.replace(/#[^\n]*/g, " ")
+    : code.replace(/\/\/[^\n]*/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ");
   return code
-    .replace(/\/\/[^\n]*/g, " ")
-    .replace(/\/\*[\s\S]*?\*\//g, " ")
     .replace(/\s+/g, " ")
     .replace(/\s*([^\w\s])\s*/g, "$1")
     .trim();
 }
 
+const KNOWN_LANGS = new Set(["swift", "python"]);
+
 const isBlocks = (v) => Array.isArray(v) && v.length > 0 && v.every((b) => typeof b === "string" && b.trim());
 
-function checkStep(file, where, s, i) {
+function checkStep(file, where, s, i, moduleLang) {
   const w = `${where} step[${i}]`;
   if (!s || typeof s !== "object") return err(file, `${w}: not an object`);
+  const lang = s.lang || moduleLang || "swift";
+  if (s.lang && !KNOWN_LANGS.has(s.lang)) err(file, `${w}: unknown lang ${JSON.stringify(s.lang)}`);
   switch (s.type) {
     case "text":
       if (!isBlocks(s.md)) err(file, `${w}: text.md must be a non-empty array of strings`);
@@ -48,7 +53,7 @@ function checkStep(file, where, s, i) {
       if (!isBlocks(s.prompt)) err(file, `${w}: exercise.prompt must be a non-empty array of strings`);
       if (typeof s.solution !== "string" || !s.solution.trim()) err(file, `${w}: exercise.solution missing`);
       if (!Array.isArray(s.checks) || !s.checks.length) { err(file, `${w}: exercise.checks missing`); break; }
-      const n = normalize(s.solution || "");
+      const n = normalize(s.solution || "", lang);
       for (const [ci, rule] of (s.checks || []).entries()) {
         if (!(isRegExp(rule.re))) { err(file, `${w} checks[${ci}]: re must be a regex literal`); continue; }
         if (typeof rule.hint !== "string" || !rule.hint.trim()) err(file, `${w} checks[${ci}]: hint missing`);
@@ -60,7 +65,7 @@ function checkStep(file, where, s, i) {
       }
       // Starter shouldn't already pass (exercise would be a no-op)
       if (typeof s.starter === "string" && s.starter.trim()) {
-        const ns = normalize(s.starter);
+        const ns = normalize(s.starter, lang);
         const passes = (s.checks || []).every((r) => isRegExp(r.re) && r.re.test(ns)) &&
           !(s.mustNot || []).some((r) => isRegExp(r.re) && r.re.test(ns));
         if (passes) err(file, `${w}: the STARTER already passes all checks — nothing to do`);
@@ -106,6 +111,7 @@ for (const file of files) {
   if (seenModuleIds.has(m.id)) err(file, `duplicate module id ${m.id}`);
   seenModuleIds.add(m.id);
   if (!m.title) err(file, "module.title missing");
+  if (m.lang && !KNOWN_LANGS.has(m.lang)) err(file, `module.lang ${JSON.stringify(m.lang)} must be one of ${[...KNOWN_LANGS].join(", ")}`);
   if (!Array.isArray(m.lessons) || !m.lessons.length) { err(file, "module.lessons missing"); continue; }
 
   const seenLessons = new Set();
@@ -120,7 +126,7 @@ for (const file of files) {
       stepCount++;
       if (s && s.type === "exercise") exerciseCount++;
       if (s && s.type === "quiz") quizCount++;
-      checkStep(file, where, s, i);
+      checkStep(file, where, s, i, m.lang);
     });
     const last = l.steps[l.steps.length - 1];
     if (last && last.type === "text") err(file, `${where}: ends with a text step — end on a quiz, exercise, or xcode step`);
