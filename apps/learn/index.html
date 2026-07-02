@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PawWalk Academy — learn Swift & SwiftUI by rebuilding PawWalk</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>">
+</head>
+<body>
+  <button id="menu-toggle" aria-label="Toggle course menu">☰ <span>Course</span></button>
+  <div class="layout">
+    <nav id="sidebar" aria-label="Course outline">
+      <header class="brand">
+        <div class="brand-row"><span class="paw">🐾</span><h1>PawWalk Academy</h1></div>
+        <p class="mono-caption">Zero → shipped iOS app</p>
+        <div class="overall"><div class="bar"><div id="overall-fill"></div></div><span id="overall-label" class="mono-caption"></span></div>
+      </header>
+      <div id="module-list"></div>
+      <footer class="side-foot">
+        <button id="reset-progress" class="ghost">Reset progress</button>
+      </footer>
+    </nav>
+    <main id="content"></main>
+  </div>
+
+  <script src="lessons/00-welcome.js"></script>
+  <script src="lessons/01-swift-basics.js"></script>
+  <script src="lessons/02-swift-deeper.js"></script>
+  <script src="lessons/03-swift-for-apps.js"></script>
+  <script src="lessons/04-swiftui-first-steps.js"></script>
+  <script src="lessons/05-state.js"></script>
+  <script src="lessons/06-design-system.js"></script>
+  <script src="lessons/07-networking.js"></script>
+  <script src="lessons/08-auth.js"></script>
+  <script src="lessons/09-lists-navigation.js"></script>
+  <script src="lessons/10-bookings.js"></script>
+  <script src="lessons/11-live-tracking.js"></script>
+  <script src="lessons/12-assistant-graduation.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
