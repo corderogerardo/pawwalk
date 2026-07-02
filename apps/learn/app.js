@@ -3,7 +3,7 @@
   "use strict";
 
   const COURSE = window.COURSE || [];
-  const STORE_KEY = "pawwalk-academy-v1";
+  const STORE_KEY = window.STORE_KEY || "pawwalk-academy-v1";
 
   // ---------- Progress state ----------
   function loadState() {
@@ -56,11 +56,13 @@
   }
   const md = (blocks) => (blocks || []).map(mdBlock).join("");
 
-  // ---------- Swift syntax highlighting ----------
-  const SWIFT_KW = new Set(("func var let if else guard return switch case default for while in do catch try throw throws " +
+  // ---------- Swift + Kotlin syntax highlighting (shared keyword set) ----------
+  const KW = new Set(("func var let if else guard return switch case default for while in do catch try throw throws " +
     "async await import struct class enum protocol extension init deinit self Self super static final private public " +
     "internal fileprivate open lazy weak unowned mutating nonmutating override required convenience some any nil true false " +
-    "as is where defer break continue fallthrough repeat typealias associatedtype indirect inout get set willSet didSet actor").split(" "));
+    "as is where defer break continue fallthrough repeat typealias associatedtype indirect inout get set willSet didSet actor " +
+    "fun val when object data sealed suspend package companion by null vararg out constructor interface " +
+    "abstract lateinit crossinline reified inline").split(" "));
   function highlight(src) {
     const out = [];
     const re = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*")|(@\w+)|(#\w+)|\b(\d[\d_]*(?:\.\d[\d_]*)?)\b|\b([A-Za-z_]\w*)\b/g;
@@ -73,7 +75,7 @@
       else if (str) out.push(`<span class="tok-str">${esc(str)}</span>`);
       else if (attr || hash) out.push(`<span class="tok-attr">${esc(full)}</span>`);
       else if (num) out.push(`<span class="tok-num">${esc(num)}</span>`);
-      else if (word && SWIFT_KW.has(word)) out.push(`<span class="tok-kw">${esc(word)}</span>`);
+      else if (word && KW.has(word)) out.push(`<span class="tok-kw">${esc(word)}</span>`);
       else if (word && /^[A-Z]/.test(word)) out.push(`<span class="tok-type">${esc(word)}</span>`);
       else out.push(esc(full));
     }
