@@ -479,7 +479,7 @@ fun WalkersScreen(
           title: "One state, one switch",
           prompt: [
             "Write a tiny composable, `WalkerCountLabel`, that displays a walker count based on a `WalkersViewModel.UiState`.",
-            "1. Take one parameter: `state: WalkersViewModel.UiState`.\n2. Use `when (state)` with three branches: `Loading` shows `Text(\"Loading…\")`; `is Success` shows `Text(\"${\"$\"}{state.walkers.size} walkers\")`; `is Error` shows `Text(\"Error\")`.",
+            "1. Take one parameter: `state: WalkersViewModel.UiState`.\n2. Use `when (state)` with three branches: `Loading` shows `Text(\"Loading…\")`; `is Success` shows `Text(\"${state.walkers.size} walkers\")`; `is Error` shows `Text(\"Error\")`.",
           ],
           starter: String.raw`@Composable
 fun WalkerCountLabel(state: WalkersViewModel.UiState) {

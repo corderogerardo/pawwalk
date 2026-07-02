@@ -107,7 +107,7 @@ var rating = 4.8`,
           md: [
             "## Text, and how to build it",
             "A **String** is text: characters between double quotes, like `\"Mochi\"`. PawWalk is full of them — dog names, walker bios, neighborhood names, error messages.",
-            "The single most-used String feature in Kotlin is the **string template**: put `$name` inside the quotes, and Kotlin drops that value into the text right there. For anything more than a bare name — a calculation, a property access — wrap it in braces: `${\"$\"}{expr}`.",
+            "The single most-used String feature in Kotlin is the **string template**: put `$name` inside the quotes, and Kotlin drops that value into the text right there. For anything more than a bare name — a calculation, a property access — wrap it in braces: `${expr}`.",
             "You will type `$name` constantly in this course. It's how almost every label in the PawWalk UI gets its text.",
           ],
         },
@@ -120,7 +120,7 @@ val minutes = 30
 val greeting = "Time to walk $dogName!"                // "Time to walk Mochi!"
 val plan = "A $minutes-minute walk"                    // "A 30-minute walk"
 val longer = "Or go big: ${"$"}{minutes * 2} minutes"  // "Or go big: 60 minutes"`,
-          caption: "A bare name after `$` is enough. An expression — like `minutes * 2` — needs braces: `${\"$\"}{minutes * 2}`. Kotlin evaluates what's inside, turns the result into text, and splices it in.",
+          caption: "A bare name after `$` is enough. An expression — like `minutes * 2` — needs braces: `${minutes * 2}`. Kotlin evaluates what's inside, turns the result into text, and splices it in.",
         },
         {
           type: "code",
