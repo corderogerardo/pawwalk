@@ -1,5 +1,11 @@
 # Android / Kotlin Learning Track
 
+> **New: the interactive course.** [PawWalk Academy — Android](../../apps/learn/android.html)
+> (13 modules, 55 lessons, run with `cd apps/learn && python3 -m http.server 4173`) teaches
+> Kotlin/Jetpack Compose from zero by rebuilding `apps/android`, with type-the-code exercises
+> checked in the browser. It supersedes this track for beginners — read on for the
+> self-directed, resource-linked version.
+
 Native Android development with Kotlin and Jetpack Compose. Maps to the code in [`apps/android`](../../apps/android).
 
 ## Prerequisites

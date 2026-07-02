@@ -40,6 +40,9 @@ When all four show the same three walkers, you've got the full loop working. Tha
 > website (13 modules, 52 lessons) that teaches Swift/SwiftUI from zero by rebuilding the iOS app,
 > with type-the-code exercises checked in the browser. Run it with
 > `cd apps/learn && python3 -m http.server 4173`. It supersedes the iOS track below for beginners.
+> It also has an **Android edition** (`apps/learn/android.html`, 13 modules, 55 lessons) that
+> teaches Kotlin/Jetpack Compose the same way by rebuilding `apps/android` — it supersedes the
+> Android track below for beginners.
 
 ## The three tracks
 

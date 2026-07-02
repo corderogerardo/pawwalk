@@ -52,6 +52,24 @@ When a lesson rebuilds a piece of a repo file, read that file first and match it
 verbatim — don't recall it from memory. Title code blocks with the real path, e.g.
 `data/Models.kt`.
 
+## Another trap — URL literals silently truncated by the comment stripper
+
+The validator's (and engine's) `normalize()` strips comments with
+`code.replace(/\/\/[^\n]*/g, " ")` before checking regexes — it has no idea what a
+string literal is, so it treats **any** `//` as a comment start, including the `//` in
+`https://...`. If a `checks`/`solution` string contains a URL literal, everything from
+that `//` to the end of the line is silently cut before your regex ever runs — the
+check can never match, and the failure mode is confusing (a check that looks obviously
+correct still fails).
+
+Rule: **keep URL literals out of anything that gets normalized** — i.e. out of
+`exercise` `solution`/`starter`/`checks`/`mustNot`. Two ways to show a URL safely:
+
+- Put it in a read-only `type: "code"` step (`source` isn't normalized/checked, only
+  exercise solutions are), or
+- Put it in a starter line the learner doesn't have to type/match against a check
+  (e.g. pre-filled and outside what any regex targets).
+
 ## Checklist steps (`type: "xcode"`)
 
 The step type is still literally the string `"xcode"` — it's an engine keyword
