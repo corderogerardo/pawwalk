@@ -9,9 +9,10 @@ in-browser checking. Two courses share one engine:
 
 Each course's header links to the other so you can hop between them.
 
-**Part II (modules 13+)** teaches the Python backend the same way: Python → Flask →
-Django → FastAPI (the real `apps/backend`) → LLM agents → RAG. Build plan and per-module
-tasks: [`docs/learning/python-academy-plan.md`](../../docs/learning/python-academy-plan.md).
+**Part II (modules 13–31, complete)** teaches the Python backend the same way: Python → Flask →
+Django → FastAPI (the real `apps/backend`) → LLM agents → RAG. The full academy is now 32 modules
+/ 120 lessons. Build plan and per-module tasks:
+[`docs/learning/python-academy-plan.md`](../../docs/learning/python-academy-plan.md).
 
 ## Run it
 
