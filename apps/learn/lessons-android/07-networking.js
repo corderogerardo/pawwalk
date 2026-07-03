@@ -5,6 +5,7 @@ window.COURSE.push({
   id: "networking-android",
   title: "Networking with Retrofit",
   emoji: "🌐",
+  lang: "kotlin",
   lessons: [
     // ------------------------------------------------------------------
     {

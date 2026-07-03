@@ -5,6 +5,7 @@ window.COURSE.push({
   id: "compose-first-steps",
   title: "Jetpack Compose: First Steps",
   emoji: "🎨",
+  lang: "kotlin",
   lessons: [
     // ────────────────────────────────────────────────────────────
     {

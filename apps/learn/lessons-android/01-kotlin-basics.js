@@ -5,6 +5,7 @@ window.COURSE.push({
   id: "kotlin-basics",
   title: "Kotlin Basics",
   emoji: "🔤",
+  lang: "kotlin",
   lessons: [
     {
       id: "constants-and-variables",

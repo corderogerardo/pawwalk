@@ -5,6 +5,7 @@ window.COURSE.push({
   id: "compose-state",
   title: "State & Data Flow",
   emoji: "🔄",
+  lang: "kotlin",
   lessons: [
     // ────────────────────────────────────────────────────────────
     {

@@ -5,6 +5,7 @@ window.COURSE.push({
   id: "design-system-android",
   title: "The PawWalk Design System",
   emoji: "🖌️",
+  lang: "kotlin",
   lessons: [
     // ────────────────────────────────────────────────────────────────
     {
@@ -401,6 +402,7 @@ fun DotIcon(tint: Color, size: Dp = 10.dp) {
         },
         {
           type: "xcode",
+          label: "Over to Android Studio",
           title: "See the design system live",
           intro: [
             "Everything from this module already ships in the app. Go watch it in action:",

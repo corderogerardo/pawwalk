@@ -5,6 +5,7 @@ window.COURSE.push({
   id: "kotlin-for-apps",
   title: "Kotlin for Real Apps: Serialization & Coroutines",
   emoji: "📦",
+  lang: "kotlin",
   lessons: [
     {
       id: "json-and-serializable",

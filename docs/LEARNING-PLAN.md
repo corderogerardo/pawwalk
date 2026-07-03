@@ -44,6 +44,12 @@ When all four show the same three walkers, you've got the full loop working. Tha
 > teaches Kotlin/Jetpack Compose the same way by rebuilding `apps/android` — it supersedes the
 > Android track below for beginners.
 
+> **Part II: the Python backend course.** The academy is growing a second act — Python from zero,
+> then Flask, Django, FastAPI (the real `apps/backend`), LLM agents, and RAG. Module 13 is live;
+> the remaining modules are built task by task from
+> [`docs/learning/python-academy-plan.md`](learning/python-academy-plan.md). It will supersede the
+> backend track below for beginners the same way.
+
 ## The three tracks
 
 - **[iOS / SwiftUI](learning/ios.md)** — Swift language basics → SwiftUI views → state → networking → the Apple frameworks (MapKit, StoreKit, Sign in with Apple).

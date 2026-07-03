@@ -46,6 +46,9 @@ out/
 *.tsbuildinfo
 npm-debug.log*
 
+# ---------- Learning playground (PawWalk Academy Part II practice projects) ----------
+playground/
+
 # ---------- Editors / misc ----------
 .vscode/
 !.vscode/extensions.json

@@ -56,53 +56,73 @@
   }
   const md = (blocks) => (blocks || []).map(mdBlock).join("");
 
-  // ---------- Swift + Kotlin syntax highlighting (shared keyword set) ----------
-  const KW = new Set(("func var let if else guard return switch case default for while in do catch try throw throws " +
+  // ---------- Syntax highlighting (per language) ----------
+  const SWIFT_KW = new Set(("func var let if else guard return switch case default for while in do catch try throw throws " +
     "async await import struct class enum protocol extension init deinit self Self super static final private public " +
     "internal fileprivate open lazy weak unowned mutating nonmutating override required convenience some any nil true false " +
-    "as is where defer break continue fallthrough repeat typealias associatedtype indirect inout get set willSet didSet actor " +
-    "fun val when object data sealed suspend package companion by null vararg out constructor interface " +
-    "abstract lateinit crossinline reified inline").split(" "));
-  function highlight(src) {
+    "as is where defer break continue fallthrough repeat typealias associatedtype indirect inout get set willSet didSet actor").split(" "));
+  const PY_KW = new Set(("def return if elif else for while in not and or is None True False import from as class " +
+    "try except finally raise with pass break continue lambda yield global nonlocal del assert async await match case").split(" "));
+  const KOTLIN_KW = new Set(("fun val var when object data sealed interface suspend override package companion by lazy " +
+    "null true false is as in vararg out constructor init if else return for while do try catch finally throw import " +
+    "class enum private public internal protected open abstract final lateinit crossinline noinline reified inline " +
+    "typealias where super this break continue").split(" "));
+  // Each language: keyword set + token regex with groups (comment)(string)(attr)(number)(word).
+  // Swift and Kotlin share C-style comments/strings/annotations, so they share a token regex.
+  const C_STYLE_RE = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*")|(@\w+|#\w+)|\b(\d[\d_]*(?:\.\d[\d_]*)?)\b|\b([A-Za-z_]\w*)\b/g;
+  const LANG = {
+    swift: { kw: SWIFT_KW, re: C_STYLE_RE },
+    kotlin: { kw: KOTLIN_KW, re: C_STYLE_RE },
+    python: {
+      kw: PY_KW,
+      re: /(#[^\n]*)|((?:[fFrRbBuU]{1,2})?(?:"""[\s\S]*?"""|'''[\s\S]*?'''|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'))|(@[\w.]+)|\b(\d[\d_]*(?:\.\d[\d_]*)?)\b|\b([A-Za-z_]\w*)\b/g,
+    },
+  };
+  function highlight(src, lang) {
+    const { kw, re } = LANG[lang] || LANG.swift;
+    re.lastIndex = 0;
     const out = [];
-    const re = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*")|(@\w+)|(#\w+)|\b(\d[\d_]*(?:\.\d[\d_]*)?)\b|\b([A-Za-z_]\w*)\b/g;
     let last = 0, mt;
     while ((mt = re.exec(src))) {
       out.push(esc(src.slice(last, mt.index)));
       last = re.lastIndex;
-      const [full, com, str, attr, hash, num, word] = mt;
+      const [full, com, str, attr, num, word] = mt;
       if (com) out.push(`<span class="tok-com">${esc(com)}</span>`);
       else if (str) out.push(`<span class="tok-str">${esc(str)}</span>`);
-      else if (attr || hash) out.push(`<span class="tok-attr">${esc(full)}</span>`);
+      else if (attr) out.push(`<span class="tok-attr">${esc(full)}</span>`);
       else if (num) out.push(`<span class="tok-num">${esc(num)}</span>`);
-      else if (word && KW.has(word)) out.push(`<span class="tok-kw">${esc(word)}</span>`);
+      else if (word && kw.has(word)) out.push(`<span class="tok-kw">${esc(word)}</span>`);
       else if (word && /^[A-Z]/.test(word)) out.push(`<span class="tok-type">${esc(word)}</span>`);
       else out.push(esc(full));
     }
     out.push(esc(src.slice(last)));
     return out.join("");
   }
-  function codeBlock(source, title) {
+  // A step's language: its own `lang`, else the module's `lang`, else Swift.
+  const stepLang = (step, m) => step.lang || (m && m.lang) || "swift";
+  function codeBlock(source, title, lang) {
     const wrap = el("div", "codeblock");
     if (title) wrap.appendChild(el("div", "code-title", `<span>⌘</span> ${esc(title)}`));
     const pre = el("pre");
-    pre.innerHTML = highlight(source.replace(/^\n+|\s+$/g, ""));
+    pre.innerHTML = highlight(source.replace(/^\n+|\s+$/g, ""), lang);
     wrap.appendChild(pre);
     return wrap;
   }
 
   // ---------- Code checking ----------
   // Keep in sync with tools/validate.mjs
-  function normalize(code) {
+  function normalize(code, lang) {
+    code = lang === "python"
+      ? code.replace(/#[^\n]*/g, " ")       // strip # comments (// is floor division!)
+      : code.replace(/\/\/[^\n]*/g, " ")    // strip line comments
+            .replace(/\/\*[\s\S]*?\*\//g, " "); // strip block comments
     return code
-      .replace(/\/\/[^\n]*/g, " ")          // strip line comments
-      .replace(/\/\*[\s\S]*?\*\//g, " ")    // strip block comments
       .replace(/\s+/g, " ")                 // collapse whitespace
       .replace(/\s*([^\w\s])\s*/g, "$1")    // drop spaces around punctuation
       .trim();
   }
-  function runChecks(step, code) {
-    const n = normalize(code);
+  function runChecks(step, code, lang) {
+    const n = normalize(code, lang);
     for (const rule of step.mustNot || []) {
       if (rule.re.test(n)) return { pass: false, hint: rule.hint };
     }
@@ -117,9 +137,9 @@
     return el("div", "step", md(step.md));
   }
 
-  function renderCode(step) {
+  function renderCode(step, m) {
     const wrap = el("div", "step");
-    wrap.appendChild(codeBlock(step.source, step.title));
+    wrap.appendChild(codeBlock(step.source, step.title, stepLang(step, m)));
     if (step.caption) wrap.appendChild(el("p", null, mdInline(step.caption)));
     return wrap;
   }
@@ -215,7 +235,7 @@
       refreshChrome(m, l);
     }
     checkBtn.onclick = () => {
-      const result = runChecks(step, editor.value);
+      const result = runChecks(step, editor.value, stepLang(step, m));
       if (result.pass) {
         feedback.innerHTML = `<div class="feedback ok">✓ ${esc(step.success || "That's exactly right. On to the next step!")}</div>`;
         markDone(solutionSlot.childElementCount ? "help" : true);
@@ -233,7 +253,7 @@
     };
     revealBtn.onclick = () => {
       solutionSlot.innerHTML = "";
-      solutionSlot.appendChild(codeBlock(step.solution, "Solution"));
+      solutionSlot.appendChild(codeBlock(step.solution, "Solution", stepLang(step, m)));
       const hint = el("p", null, "Type it out yourself (don't paste) — then hit <strong>Check my code</strong>. Typing is how it sticks.");
       solutionSlot.appendChild(hint);
       revealBtn.style.display = "none";
@@ -249,7 +269,7 @@
   function renderXcode(step, m, l, i) {
     const key = sk(m, l, i);
     const card = el("div", "card xcode step" + (state.done[key] ? " done" : ""));
-    card.appendChild(el("div", "card-tag", `<span class="dot"></span><span class="mono-caption">Over to Xcode</span>`));
+    card.appendChild(el("div", "card-tag", `<span class="dot"></span><span class="mono-caption">${esc(step.label || "Over to Xcode")}</span>`));
     if (step.title) card.appendChild(el("h4", null, esc(step.title)));
     if (step.intro) card.appendChild(el("div", null, md(step.intro)));
     const list = el("div");
@@ -282,7 +302,7 @@
   function renderStep(step, m, l, i) {
     switch (step.type) {
       case "text": return renderText(step);
-      case "code": return renderCode(step);
+      case "code": return renderCode(step, m);
       case "quiz": return renderQuiz(step, m, l, i);
       case "exercise": return renderExercise(step, m, l, i);
       case "xcode": return renderXcode(step, m, l, i);

@@ -6,6 +6,7 @@ window.COURSE.push({
   id: "kotlin-deeper",
   title: "Kotlin, One Level Deeper",
   emoji: "🧠",
+  lang: "kotlin",
   lessons: [
     // ────────────────────────────────────────────────────────── Lesson 1
     {

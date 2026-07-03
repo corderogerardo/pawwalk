@@ -5,6 +5,7 @@ window.COURSE.push({
   id: "welcome-android",
   title: "Welcome & Setup",
   emoji: "🤖",
+  lang: "kotlin",
   lessons: [
     {
       id: "what-you-are-building",
@@ -159,6 +160,7 @@ println("Hello, $greeting!")`,
         },
         {
           type: "xcode",
+          label: "Over to Android Studio",
           title: "Install everything",
           intro: ["Work through these on your machine. The Android Studio download can run while you do the rest."],
           items: [
@@ -198,6 +200,7 @@ println("Hello, $greeting!")`,
         },
         {
           type: "xcode",
+          label: "Over to Android Studio",
           title: "Run the app in Android Studio",
           intro: ["From the repository root:"],
           items: [

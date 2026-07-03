@@ -5,6 +5,7 @@ window.COURSE.push({
   id: "lists-navigation",
   title: "Lists & Navigation",
   emoji: "🧭",
+  lang: "kotlin",
   lessons: [
     // ────────────────────────────────────────────────────────────
     {
@@ -471,6 +472,7 @@ fun HomeScreen(
         },
         {
           type: "xcode",
+          label: "Over to Android Studio",
           title: "Trace a tap across three files",
           intro: ["Everything in this module is live in the app. Prove it end to end:"],
           items: [

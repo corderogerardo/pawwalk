@@ -5,6 +5,7 @@ window.COURSE.push({
   id: "assistant-graduation-android",
   title: "The AI Assistant & Graduation",
   emoji: "🎓",
+  lang: "kotlin",
   lessons: [
     // ────────────────────────────────────────────────────────────────────
     {
@@ -405,6 +406,7 @@ fun ProfileScreen(
         },
         {
           type: "xcode",
+          label: "Over to Android Studio",
           title: "The graduation walk",
           intro: [
             "One last run. Book a walk the way a real user would — by asking for it:",

@@ -5,6 +5,7 @@ window.COURSE.push({
   id: "live-tracking-android",
   title: "Live Walk Tracking",
   emoji: "📍",
+  lang: "kotlin",
   lessons: [
     // ────────────────────────────────────────────────────────────────────
     {

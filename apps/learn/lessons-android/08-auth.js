@@ -5,6 +5,7 @@ window.COURSE.push({
   id: "auth-android",
   title: "Auth & Secure Storage",
   emoji: "🔐",
+  lang: "kotlin",
   lessons: [
     // ────────────────────────────────────────────────────────────────────
     {

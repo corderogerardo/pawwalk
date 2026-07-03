@@ -5,6 +5,7 @@ window.COURSE.push({
   id: "bookings-android",
   title: "Bookings & Forms",
   emoji: "📅",
+  lang: "kotlin",
   lessons: [
     // ────────────────────────────────────────────────────────────────────
     {

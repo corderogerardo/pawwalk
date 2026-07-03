@@ -5,6 +5,14 @@ that file first. Everything there (module shape, step types, pedagogy rules, the
 validator) applies unchanged to `lessons-android/`. This page covers only what's
 different when the code is Kotlin instead of Swift.
 
+## Every module declares `lang: "kotlin"`
+
+The engine highlights and normalizes code per language (`swift` | `python` |
+`kotlin`), defaulting to Swift. Every module in `lessons-android/` must set
+`lang: "kotlin"` next to its `emoji` so Kotlin keywords (`fun`, `val`, `when`, …)
+highlight correctly. A single step can override with its own `lang` if it ever
+shows another language.
+
 ## THE BIG TRAP — Kotlin `${...}` inside JS templates
 
 All code fields (`source`, `starter`, `solution`) still use `String.raw` backtick
@@ -73,9 +81,7 @@ Rule: **keep URL literals out of anything that gets normalized** — i.e. out of
 ## Checklist steps (`type: "xcode"`)
 
 The step type is still literally the string `"xcode"` — it's an engine keyword
-meaning "a checklist done outside the browser," not literally about Xcode. Just
-title it for Android Studio, e.g. `title: "Run the app in Android Studio"`; the
-step's own `title` is what's shown as the card's heading. The engine's badge text
-above that heading ("Over to Xcode") and its skip-button copy ("...on my Mac
-later...") are hardcoded leftovers from the iOS course — cosmetic only, out of
-scope for a lesson file to fix. Just supply a good `title` per step.
+meaning "a checklist done outside the browser," not literally about Xcode. Title
+it for Android Studio (e.g. `title: "Run the app in Android Studio"`), and set
+`label: "Over to Android Studio"` — the `label` field overrides the badge text
+above the card's heading (it defaults to "Over to Xcode").
