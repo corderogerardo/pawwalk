@@ -41,11 +41,13 @@ When all four show the same three walkers, you've got the full loop working. Tha
 > with type-the-code exercises checked in the browser. Run it with
 > `cd apps/learn && python3 -m http.server 4173`. It supersedes the iOS track below for beginners.
 
-> **Part II: the Python backend course.** The academy is growing a second act — Python from zero,
-> then Flask, Django, FastAPI (the real `apps/backend`), LLM agents, and RAG. Module 13 is live;
-> the remaining modules are built task by task from
-> [`docs/learning/python-academy-plan.md`](learning/python-academy-plan.md). It will supersede the
-> backend track below for beginners the same way.
+> **Part II: the Python backend course — complete.** The academy's second act is fully built:
+> modules 13–31 take you from Python from zero through Flask, Django, FastAPI (the real
+> `apps/backend`), LLM agents (LangGraph + Pydantic AI), and RAG — 19 modules, type-the-code
+> exercises checked in the browser, anchored in the real repo. The whole academy now spans
+> **32 modules / 120 lessons**. Build plan and per-module specs:
+> [`docs/learning/python-academy-plan.md`](learning/python-academy-plan.md). It supersedes the
+> backend track below for beginners the same way Part I supersedes the iOS track.
 
 ## The three tracks
 

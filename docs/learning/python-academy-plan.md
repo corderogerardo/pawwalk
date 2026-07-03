@@ -54,24 +54,24 @@ Stage D). Anchor every example in PawWalk: walkers, bookings, prices in cents, G
 | Stage | Task / Module | File | Status |
 |---|---|---|---|
 | A | 13 · Part II welcome | `13-py-welcome.js` | ✅ done |
-| A | 14 · Python basics | `14-python-basics.js` | ☐ |
-| A | 15 · Collections | `15-collections.js` | ☐ |
-| A | 16 · Classes & typing | `16-classes-typing.js` | ☐ |
-| A | 17 · Errors, files & JSON | `17-errors-files-json.js` | ☐ |
-| B | 18 · HTTP & Flask | `18-http-flask.js` | ☐ |
-| B | 19 · Flask deeper | `19-flask-deeper.js` | ☐ |
-| C | 20 · Django anatomy | `20-django-anatomy.js` | ☐ |
-| C | 21 · Django ORM | `21-django-orm.js` | ☐ |
-| C | 22 · Django APIs & auth | `22-django-api-auth.js` | ☐ |
-| D | 23 · Pydantic & FastAPI | `23-pydantic-fastapi.js` | ☐ |
-| D | 24 · Routers & DI | `24-fastapi-routers-di.js` | ☐ |
-| D | 25 · Databases | `25-database-sqlalchemy.js` | ☐ |
-| D | 26 · Auth & security | `26-auth-security.js` | ☐ |
-| D | 27 · Payments & testing | `27-payments-testing.js` | ☐ |
-| E | 28 · LLM foundations | `28-llm-foundations.js` | ☐ |
-| E | 29 · LangGraph agents | `29-langgraph-agent.js` | ☐ |
-| E | 30 · RAG from scratch | `30-rag-from-scratch.js` | ☐ |
-| E | 31 · RAG in the assistant + graduation | `31-rag-assistant-graduation.js` | ☐ |
+| A | 14 · Python basics | `14-python-basics.js` | ✅ done |
+| A | 15 · Collections | `15-collections.js` | ✅ done |
+| A | 16 · Classes & typing | `16-classes-typing.js` | ✅ done |
+| A | 17 · Errors, files & JSON | `17-errors-files-json.js` | ✅ done |
+| B | 18 · HTTP & Flask | `18-http-flask.js` | ✅ done |
+| B | 19 · Flask deeper | `19-flask-deeper.js` | ✅ done |
+| C | 20 · Django anatomy | `20-django-anatomy.js` | ✅ done |
+| C | 21 · Django ORM | `21-django-orm.js` | ✅ done |
+| C | 22 · Django APIs & auth | `22-django-api-auth.js` | ✅ done |
+| D | 23 · Pydantic & FastAPI | `23-pydantic-fastapi.js` | ✅ done |
+| D | 24 · Routers & DI | `24-fastapi-routers-di.js` | ✅ done |
+| D | 25 · Databases | `25-database-sqlalchemy.js` | ✅ done |
+| D | 26 · Auth & security | `26-auth-security.js` | ✅ done |
+| D | 27 · Payments & testing | `27-payments-testing.js` | ✅ done |
+| E | 28 · LLM foundations | `28-llm-foundations.js` | ✅ done |
+| E | 29 · LangGraph agents | `29-langgraph-agent.js` | ✅ done |
+| E | 30 · RAG from scratch | `30-rag-from-scratch.js` | ✅ done |
+| E | 31 · RAG in the assistant + graduation | `31-rag-assistant-graduation.js` | ✅ done |
 
 ---
 
