@@ -63,9 +63,11 @@ def _completed_walk(
     session: Session, owner_id: str, walker: dict, days_ago: int,
     duration_minutes: int, route_offset: float,
 ) -> None:
-    start = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0) - timedelta(
-        days=days_ago, hours=2
-    )
+    # Anchor to a fixed afternoon hour on the target calendar day. Subtracting a raw
+    # hours offset from "now" could cross midnight and shift start_time's date a day
+    # earlier when seeded just after 00:00 UTC — which broke the streak calculation.
+    day = datetime.now(timezone.utc).date() - timedelta(days=days_ago)
+    start = datetime(day.year, day.month, day.day, 14, 0, tzinfo=timezone.utc)
     booking = BookingTable(
         id=f"bkg_{uuid4().hex[:12]}",
         walker_id=walker["id"],
