@@ -1,6 +1,6 @@
-// Validates every lessons/*.js file: syntax, schema, and — critically — that each
-// exercise's own solution passes its own checks (so every exercise is solvable).
-// Usage: node tools/validate.mjs   (from apps/learn/)
+// Validates every *.js file in a lessons directory: syntax, schema, and — critically —
+// that each exercise's own solution passes its own checks (so every exercise is solvable).
+// Usage: node tools/validate.mjs [dir]   (from apps/learn/; dir defaults to "lessons")
 import { readFileSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -10,7 +10,8 @@ import vm from "node:vm";
 const isRegExp = (v) => types.isRegExp(v); // instanceof fails across the vm realm
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const lessonsDir = join(root, "lessons");
+const dir = process.argv[2] || "lessons";
+const lessonsDir = join(root, dir);
 const files = readdirSync(lessonsDir).filter((f) => f.endsWith(".js")).sort();
 
 const errors = [];
@@ -27,7 +28,7 @@ function normalize(code, lang) {
     .trim();
 }
 
-const KNOWN_LANGS = new Set(["swift", "python"]);
+const KNOWN_LANGS = new Set(["swift", "python", "kotlin"]);
 
 const isBlocks = (v) => Array.isArray(v) && v.length > 0 && v.every((b) => typeof b === "string" && b.trim());
 

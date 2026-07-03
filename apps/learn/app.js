@@ -3,7 +3,7 @@
   "use strict";
 
   const COURSE = window.COURSE || [];
-  const STORE_KEY = "pawwalk-academy-v1";
+  const STORE_KEY = window.STORE_KEY || "pawwalk-academy-v1";
 
   // ---------- Progress state ----------
   function loadState() {
@@ -63,12 +63,16 @@
     "as is where defer break continue fallthrough repeat typealias associatedtype indirect inout get set willSet didSet actor").split(" "));
   const PY_KW = new Set(("def return if elif else for while in not and or is None True False import from as class " +
     "try except finally raise with pass break continue lambda yield global nonlocal del assert async await match case").split(" "));
+  const KOTLIN_KW = new Set(("fun val var when object data sealed interface suspend override package companion by lazy " +
+    "null true false is as in vararg out constructor init if else return for while do try catch finally throw import " +
+    "class enum private public internal protected open abstract final lateinit crossinline noinline reified inline " +
+    "typealias where super this break continue").split(" "));
   // Each language: keyword set + token regex with groups (comment)(string)(attr)(number)(word).
+  // Swift and Kotlin share C-style comments/strings/annotations, so they share a token regex.
+  const C_STYLE_RE = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*")|(@\w+|#\w+)|\b(\d[\d_]*(?:\.\d[\d_]*)?)\b|\b([A-Za-z_]\w*)\b/g;
   const LANG = {
-    swift: {
-      kw: SWIFT_KW,
-      re: /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*")|(@\w+|#\w+)|\b(\d[\d_]*(?:\.\d[\d_]*)?)\b|\b([A-Za-z_]\w*)\b/g,
-    },
+    swift: { kw: SWIFT_KW, re: C_STYLE_RE },
+    kotlin: { kw: KOTLIN_KW, re: C_STYLE_RE },
     python: {
       kw: PY_KW,
       re: /(#[^\n]*)|((?:[fFrRbBuU]{1,2})?(?:"""[\s\S]*?"""|'''[\s\S]*?'''|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'))|(@[\w.]+)|\b(\d[\d_]*(?:\.\d[\d_]*)?)\b|\b([A-Za-z_]\w*)\b/g,
